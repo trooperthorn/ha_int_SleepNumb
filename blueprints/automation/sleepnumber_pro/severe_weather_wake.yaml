@@ -1,0 +1,57 @@
+blueprint:
+  name: SleepNumber — Severe-weather alert while asleep
+  description: >
+    If a severe-weather warning fires while someone is in bed, escalate: send a
+    high-priority notification and optionally bring the lights up. Uses
+    SleepNumber presence so it only escalates when you'd actually be asleep.
+  domain: automation
+  source_url: https://github.com/trooperthorn/ha_int_SleepNumb/blob/main/blueprints/automation/sleepnumber_pro/severe_weather_wake.yaml
+  input:
+    weather_warning:
+      name: Severe-weather warning entity
+      description: A binary sensor that turns on for a severe-weather warning.
+      selector:
+        entity:
+          domain: binary_sensor
+    presence_sensors:
+      name: In-bed sensors
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    notify_target:
+      name: Notify service
+      description: A notify service; sent with high priority.
+      selector:
+        text:
+    wake_actions:
+      name: Extra wake actions (optional)
+      description: e.g. turn bedroom lights on to a low level.
+      default: []
+      selector:
+        action:
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input weather_warning
+    to: "on"
+
+action:
+  # Only escalate if at least one person is in bed.
+  - variables:
+      presence: !input presence_sensors
+  - condition: template
+    value_template: "{{ presence | map('states') | select('eq', 'on') | list | count > 0 }}"
+  - service: !input notify_target
+    data:
+      title: Severe weather warning
+      message: A severe-weather warning was just issued.
+      data:
+        push:
+          interruption-level: critical
+        priority: high
+        ttl: 0
+  - choose: []
+    default: !input wake_actions

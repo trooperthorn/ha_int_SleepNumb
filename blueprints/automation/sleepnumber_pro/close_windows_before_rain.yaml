@@ -1,0 +1,68 @@
+blueprint:
+  name: SleepNumber — Close up before rain (when in bed)
+  description: >
+    When everyone is in bed and rain is on the way, remind you to close the
+    windows (and optionally close covers automatically). Uses SleepNumber
+    presence so it only nags when you're actually settled for the night.
+  domain: automation
+  source_url: https://github.com/trooperthorn/ha_int_SleepNumb/blob/main/blueprints/automation/sleepnumber_pro/close_windows_before_rain.yaml
+  input:
+    presence_sensors:
+      name: In-bed sensors
+      description: The SleepNumber "In bed" occupancy sensors that must all be on.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    rain_soon:
+      name: Rain-incoming indicator
+      description: >
+        A binary sensor that is on when rain is expected soon (e.g. a template
+        from your weather integration's forecast, or a rain-sensor).
+      selector:
+        entity:
+          domain: binary_sensor
+    notify_target:
+      name: Notify service
+      description: The notify service to call (e.g. notify.mobile_app_phone).
+      selector:
+        text:
+    covers:
+      name: Covers to close (optional)
+      default: []
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input rain_soon
+    to: "on"
+  - platform: state
+    entity_id: !input presence_sensors
+    to: "on"
+
+condition:
+  - condition: state
+    entity_id: !input rain_soon
+    state: "on"
+
+action:
+  # Gate on "everyone in bed": stop unless every presence sensor is on.
+  - variables:
+      presence: !input presence_sensors
+  - condition: template
+    value_template: "{{ presence | map('states') | select('ne', 'on') | list | count == 0 }}"
+  - service: !input notify_target
+    data:
+      title: Rain incoming
+      message: Everyone's in bed and rain is expected soon — close the windows.
+  - choose:
+      - conditions: "{{ (covers | default([])) | count > 0 }}"
+        sequence:
+          - service: cover.close_cover
+            target:
+              entity_id: !input covers

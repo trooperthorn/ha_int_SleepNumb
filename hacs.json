@@ -1,0 +1,6 @@
+{
+  "name": "Sleep Number (SleepIQ) Local-First",
+  "content_in_root": false,
+  "render_readme": true,
+  "homeassistant": "2025.1.0"
+}

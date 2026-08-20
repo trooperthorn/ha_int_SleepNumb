@@ -1,0 +1,47 @@
+blueprint:
+  name: SleepNumber — Solar/battery night mode when in bed
+  description: >
+    When the bed becomes occupied for the night, switch your solar/battery
+    system to overnight behaviour (e.g. prioritise self-use over export), and
+    restore it when you get up. Pair with your inverter/battery integration.
+  domain: automation
+  source_url: https://github.com/trooperthorn/ha_int_SleepNumb/blob/main/blueprints/automation/sleepnumber_pro/solar_night_mode.yaml
+  input:
+    presence_sensor:
+      name: In-bed sensor
+      description: A SleepNumber "In bed" sensor (usually the last person's).
+      selector:
+        entity:
+          domain: binary_sensor
+    night_actions:
+      name: Enter night mode actions
+      description: Run when the bed becomes occupied (e.g. set battery to self-use).
+      default: []
+      selector:
+        action:
+    day_actions:
+      name: Exit night mode actions
+      description: Run when the bed becomes empty in the morning.
+      default: []
+      selector:
+        action:
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input presence_sensor
+    to: "on"
+    id: to_bed
+  - platform: state
+    entity_id: !input presence_sensor
+    to: "off"
+    for: "00:05:00"
+    id: out_of_bed
+
+action:
+  - choose:
+      - conditions: "{{ trigger.id == 'to_bed' }}"
+        sequence: !input night_actions
+      - conditions: "{{ trigger.id == 'out_of_bed' }}"
+        sequence: !input day_actions

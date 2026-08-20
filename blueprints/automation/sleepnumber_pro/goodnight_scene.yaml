@@ -1,0 +1,45 @@
+blueprint:
+  name: SleepNumber — Goodnight when the last person gets in bed
+  description: >
+    When everyone is finally in bed, run your goodnight routine: lock up, turn
+    off lights, arm the alarm — whatever you put in the action.
+  domain: automation
+  source_url: https://github.com/trooperthorn/ha_int_SleepNumb/blob/main/blueprints/automation/sleepnumber_pro/goodnight_scene.yaml
+  input:
+    presence_sensors:
+      name: In-bed sensors
+      description: All SleepNumber "In bed" sensors that must be on.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    only_after:
+      name: Only after this time
+      default: "21:00:00"
+      selector:
+        time:
+    goodnight_actions:
+      name: Goodnight actions
+      description: What to do once everyone is in bed.
+      default: []
+      selector:
+        action:
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input presence_sensors
+    to: "on"
+
+condition:
+  - condition: time
+    after: !input only_after
+
+action:
+  - variables:
+      presence: !input presence_sensors
+  - condition: template
+    value_template: "{{ presence | map('states') | select('ne', 'on') | list | count == 0 }}"
+  - choose: []
+    default: !input goodnight_actions

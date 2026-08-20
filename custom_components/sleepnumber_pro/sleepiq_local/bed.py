@@ -1,0 +1,101 @@
+"""Bed object from SleepIQ API."""
+from __future__ import annotations
+
+from typing import Any
+
+from .api import SleepIQAPI
+from .consts import SIDES_FULL, Side
+from .foundation import SleepIQFoundation
+from .sleeper import SleepIQSleeper
+
+
+class SleepIQBed:
+    """Bed object from SleepIQ API."""
+
+    def __init__(self, api: SleepIQAPI, data: dict[str, Any]) -> None:
+        """Initialize bed object."""
+        self._api = api
+
+        self.name = data["name"]
+        self.id = data["bedId"]
+        self.mac_addr = data["macAddress"]
+        self.paused = False
+        # Responsive Air config (still served by the cloud on the pump plane even
+        # after Sleep Number severs the foundation relay). Empty until fetched.
+        self.responsive_air: dict[str, Any] = {}
+        self.sleepers = [
+            SleepIQSleeper(api, self.id, data[f"sleeper{SIDES_FULL[side]}Id"], side)
+            for side in [Side.LEFT, Side.RIGHT]
+            if data.get(f"sleeper{SIDES_FULL[side]}Id")
+        ]
+        self.foundation = SleepIQFoundation(api, self.id)
+
+        self.model = "Unknown"
+        if "model" in data:
+            self.model = data["model"]
+        elif "components" in data:
+            for comp in data["components"]:
+                if comp["base"] == "BASE":
+                    self.model = comp["model"]
+                    break
+
+    def __str__(self) -> str:
+        """Return string representation."""
+        return (
+            f"SleepIQBed({self.name}, model={self.model}, id={self.id}) "
+            + str(self.sleepers)
+            + " "
+            + str(self.foundation)
+        )
+
+    def __repr__(self) -> str:
+        """Return string representation."""
+        return (
+            f"SleepIQBed({self.name}, model={self.model}, id={self.id}) "
+            + str(self.sleepers)
+            + " "
+            + str(self.foundation)
+        )
+
+    async def valid(self) -> bool:
+        return await self._api.check("bed/" + self.id + "/pauseMode")
+
+    async def calibrate(self) -> None:
+        """Calibrate or "baseline" bed."""
+        for sleeper in self.sleepers:
+            if sleeper.sleeper_id:
+                await sleeper.calibrate()
+                break
+
+    async def stop_pump(self) -> None:
+        """Stop pump."""
+        await self._api.put("bed/" + self.id + "/pump/forceIdle")
+
+    async def fetch_pause_mode(self) -> None:
+        """Update paused attribute with data from API."""
+        json = await self._api.get("bed/" + self.id + "/pauseMode")
+        self.paused = json.get("pauseMode", "") == "on"
+
+    async def set_pause_mode(self, mode: bool) -> None:
+        """Set pause mode in API and locally."""
+        params = {"mode": "on" if mode else "off"}
+        await self._api.put("bed/" + self.id + "/pauseMode", params=params)
+        self.paused = mode
+
+    async def fetch_responsive_air(self) -> None:
+        """Update Responsive Air config from API.
+
+        Part of the pump/mattress plane, which survives the foundation-relay cut.
+        """
+        self.responsive_air = await self._api.get("bed/" + self.id + "/responsiveAir")
+
+    def responsive_air_enabled(self, side: Side) -> bool | None:
+        """Return whether Responsive Air is enabled for a side, or None if unknown."""
+        key = "leftSideEnabled" if side == Side.LEFT else "rightSideEnabled"
+        return self.responsive_air.get(key)
+
+    async def set_responsive_air(self, side: Side, enabled: bool) -> None:
+        """Enable/disable Responsive Air for one side."""
+        key = "leftSideEnabled" if side == Side.LEFT else "rightSideEnabled"
+        await self._api.put("bed/" + self.id + "/responsiveAir", {key: enabled})
+        self.responsive_air[key] = enabled

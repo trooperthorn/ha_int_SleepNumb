@@ -1,0 +1,67 @@
+blueprint:
+  name: SleepNumber — Climate setback while in bed
+  description: >
+    Ease the thermostat back once you're in bed and restore comfort when you get
+    up. A simple, effective use of local presence that saves energy overnight.
+  domain: automation
+  source_url: https://github.com/trooperthorn/ha_int_SleepNumb/blob/main/blueprints/automation/sleepnumber_pro/climate_sleep_setback.yaml
+  input:
+    presence_sensor:
+      name: In-bed sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    climate_target:
+      name: Thermostat
+      selector:
+        entity:
+          domain: climate
+    sleep_temperature:
+      name: Sleep temperature
+      default: 18
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°"
+    wake_temperature:
+      name: Wake temperature
+      default: 21
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°"
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input presence_sensor
+    to: "on"
+    for: "00:10:00"
+    id: asleep
+  - platform: state
+    entity_id: !input presence_sensor
+    to: "off"
+    for: "00:05:00"
+    id: awake
+
+action:
+  - choose:
+      - conditions: "{{ trigger.id == 'asleep' }}"
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climate_target
+            data:
+              temperature: !input sleep_temperature
+      - conditions: "{{ trigger.id == 'awake' }}"
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climate_target
+            data:
+              temperature: !input wake_temperature

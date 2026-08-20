@@ -1,0 +1,19 @@
+{
+  "domain": "sleepnumber_pro",
+  "name": "Sleep Number (SleepIQ) Local-First",
+  "codeowners": ["@trooperthorn"],
+  "config_flow": true,
+  "dependencies": [],
+  "dhcp": [
+    {
+      "macaddress": "64DBA0*"
+    }
+  ],
+  "documentation": "https://github.com/trooperthorn/ha_int_SleepNumb",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/trooperthorn/ha_int_SleepNumb/issues",
+  "loggers": ["sleepiq_local"],
+  "requirements": [],
+  "version": "0.1.0-dev"
+}

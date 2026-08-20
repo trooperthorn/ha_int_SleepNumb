@@ -1,0 +1,115 @@
+# Sleep Number (SleepIQ) — Local-First for Home Assistant
+
+A rework of the Home Assistant Sleep Number / SleepIQ integration, engineered to **survive the SleepIQ cloud** and to exceed the Home Assistant **Platinum** quality scale.
+
+> **Why this exists:** Sleep Number filed for bankruptcy and the SleepIQ cloud is
+> already degrading (the base/foundation subsystem returns `404 "No Foundation
+> Device"`, and accounts are being force-migrated to Cognito auth that breaks the
+> stock integration). This project treats the cloud as a *fallback*, and the hub
+> on your own LAN as the *preferred* source of truth.
+
+📋 **[Audit, protocol map & architecture](https://claude.ai/code/artifact/e9014191-8db3-4c27-80c8-13bbae897622)** — the full write-up this repo implements.
+
+---
+
+## Architecture: local-first, cloud-fallback
+
+The integration always prefers the transport closest to the hardware that is
+currently answering:
+
+| Layer | Transport | Status |
+|-------|-----------|--------|
+| 1 | **Local hub driver** — an on-hub bridge daemon fronting the pump's serial protocol on the LAN | preferred (requires one-time UART root) |
+| 2 | **Cloud driver (Cognito)** — hardened REST path, JWT auth, full sleep-health archive | fallback, works today |
+| 3 | Coordinator & capability model — merges live transports into one bed model | — |
+| 4 | Home Assistant entities, services, blueprints | — |
+
+The same intent (`set_sleep_number`, `read presence`, …) maps to a pump serial
+command locally, a REST call over the cloud, and degrades cleanly when neither is
+available — feature by feature, never all-or-nothing.
+
+## Status
+
+| Phase | State |
+|-------|-------|
+| 0 · Recon + audit | ✅ complete — see the audit artifact above |
+| 1 · Hardened cloud path | ✅ shipped — full component, 10 passing tests |
+| 2 · Local UART transport | ✅ bridge + root guide shipped; activates after you root the hub |
+| 3 · Exceed Platinum | ✅ blueprints, CI, diagnostics, quality-scale tracking |
+
+### What's in the box
+
+- **`custom_components/sleepnumber_pro/`** — the integration: Cognito config flow
+  with reauth, DHCP discovery (`64:DB:A0:*`), three coordinators, a hub device and
+  per-sleeper devices, diagnostics, and entities for presence, sleep number,
+  pressure, sleep score, heart rate, respiration, HRV, restful/restless durations,
+  Responsive Air, privacy pause, calibrate, and stop-pump.
+- **`custom_components/sleepnumber_pro/sleepiq_local/`** — the forked library
+  (Cognito default, graceful 404, Responsive Air), verified live end-to-end.
+- **`bridge/`** + **[`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)** — the on-hub bridge
+  daemon and the UART root procedure that make the bed fully local.
+- **`blueprints/`** — five cross-integration automations (weather, solar, severe
+  weather, climate, goodnight). See [`docs/AUTOMATIONS.md`](docs/AUTOMATIONS.md).
+- **`tools/`** — `inspect_bed.py` (see your live bed) and `archive_history.py` with
+  a nightly scheduler to preserve your sleep history before the cloud drops it.
+
+### Entities (per sleeper unless noted)
+
+| Platform | Entities |
+|----------|----------|
+| `binary_sensor` | In bed (occupancy) |
+| `sensor` | Sleep number, pressure*, sleep score, heart rate, respiratory rate, HRV, sleep duration, restful*, restless* |
+| `number` | Sleep number (firmness) |
+| `switch` | Responsive Air; privacy pause (bed) |
+| `button` | Calibrate (bed); stop pump (bed) |
+
+<sub>* disabled by default / diagnostic.</sub>
+
+## The forked library
+
+`sleepiq_local` is a fork of [`asyncsleepiq`](https://github.com/kbickar/asyncsleepiq),
+vendored directly into the component (no PyPI dependency) so it can carry local-transport
+changes ahead of upstream. The two shipped fixes:
+
+1. **Cognito cookie auth by default.** Stock `asyncsleepiq` defaults to the legacy `_k`
+   key method, which now returns `401 "Session is invalid"` on every per-bed endpoint
+   for migrated accounts. This fork defaults to the ecim-token → JWT cookie method.
+2. **Graceful `404`.** A `404` (e.g. a disconnected foundation) no longer triggers a
+   login-retry loop and no longer fails the whole coordinator update.
+
+## Installation
+
+**HACS (custom repository):** add `https://github.com/trooperthorn/ha_int_SleepNumb`
+as an Integration repository, install "Sleep Number (SleepIQ) Local-First", restart
+Home Assistant, then **Settings → Devices & Services → Add Integration → Sleep
+Number**. Sign in with your SleepIQ email and password.
+
+**Manual:** copy `custom_components/sleepnumber_pro/` into your HA `config/custom_components/`
+directory and restart.
+
+The integration works over the cloud immediately. To go fully local and recover
+base control that Sleep Number has cut, follow [`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md).
+
+## Preserve your history
+
+```bash
+SIQ_EMAIL='you@example.com' SIQ_PASS='your-password' python tools/archive_history.py
+```
+
+Saves every night's sleep-health record (heart rate, respiration, HRV, score) to
+local JSON + CSV. Schedule it nightly with `tools/schedule_archive.ps1` (Windows).
+
+## Development
+
+```bash
+pip install homeassistant pytest-homeassistant-custom-component
+pytest -q
+```
+
+`tools/` scripts read credentials from `SIQ_EMAIL` / `SIQ_PASS` env vars.
+
+## Credits
+
+Cloud protocol derived from [`asyncsleepiq`](https://github.com/kbickar/asyncsleepiq)
+by Keilin Bickar. Local hub root technique documented by
+[Dillan Mills](https://dillan.org/articles/how-to-get-root-access-to-your-sleep-number-bed).
