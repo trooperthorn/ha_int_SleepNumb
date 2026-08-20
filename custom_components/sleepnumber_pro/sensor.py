@@ -32,6 +32,7 @@ from .const import (
     SLEEP_DURATION,
     SLEEP_NUMBER,
     SLEEP_SCORE,
+    SOURCE_BLE,
     SOURCE_CLOUD,
     SOURCE_LOCAL,
 )
@@ -165,7 +166,7 @@ class ConnectionSensor(SleepNumberBedEntity, SensorEntity):
     _attr_translation_key = CONNECTION
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = [SOURCE_LOCAL, SOURCE_CLOUD]
+    _attr_options = [SOURCE_BLE, SOURCE_LOCAL, SOURCE_CLOUD]
 
     def __init__(self, coordinator, bed) -> None:
         super().__init__(coordinator, bed)
@@ -173,12 +174,12 @@ class ConnectionSensor(SleepNumberBedEntity, SensorEntity):
 
     @callback
     def _async_update_attrs(self) -> None:
-        self._attr_native_value = getattr(self.coordinator, "source", SOURCE_CLOUD)
-        self._attr_icon = (
-            "mdi:lan-connect"
-            if self._attr_native_value == SOURCE_LOCAL
-            else "mdi:cloud-outline"
-        )
+        source = getattr(self.coordinator, "source", SOURCE_CLOUD)
+        self._attr_native_value = source
+        self._attr_icon = {
+            SOURCE_BLE: "mdi:bluetooth",
+            SOURCE_LOCAL: "mdi:lan-connect",
+        }.get(source, "mdi:cloud-outline")
 
 
 class SleepNumberSensor(SleepNumberSleeperEntity, SensorEntity):

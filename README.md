@@ -19,7 +19,7 @@ currently answering, and falls back automatically:
 
 | Priority | Transport | Status |
 |----------|-----------|--------|
-| 1 | **Bluetooth LE** — the hub's own BLE radio; local, **no hardware modification**, in-range only | discovery shipped; command map needs a one-time GATT capture ([`docs/BLUETOOTH.md`](docs/BLUETOOTH.md)) |
+| 1 | **Bluetooth LE (MCR)** — the hub's own BLE radio; local, **no hardware modification**, in-range only | shipped: reads/sets sleep number and drives base presets — **recovers base control the cloud severed** ([`docs/BLUETOOTH.md`](docs/BLUETOOTH.md)) |
 | 2 | **On-hub bridge** — a LAN daemon over the pump protocol; local, whole-home | shipped; needs a one-time UART root ([`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)) |
 | 3 | **Cloud (Cognito)** — hardened REST, JWT auth, full sleep-health archive | live now; automatic fallback |
 
@@ -50,9 +50,10 @@ feature, never all-or-nothing.
   (Cognito default, graceful 404, Responsive Air), verified live end-to-end.
 - **`bridge/`** + **[`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)** — the on-hub bridge
   daemon and the UART root procedure (whole-home local path).
-- **Bluetooth** — [`docs/BLUETOOTH.md`](docs/BLUETOOTH.md) + `tools/ble_scan.py`:
-  the no-root local path over the hub's own BLE radio; capture your bed's GATT to
-  finish the command map.
+- **Bluetooth (MCR)** — [`docs/BLUETOOTH.md`](docs/BLUETOOTH.md), `mcr.py`,
+  `bluetooth.py`, `tools/ble_scan.py`: the no-root local path over the hub's own
+  BLE radio — reads/sets sleep number and drives base presets, recovering base
+  control the cloud gave up.
 - **`blueprints/`** — five cross-integration automations (weather, solar, severe
   weather, climate, goodnight). See [`docs/AUTOMATIONS.md`](docs/AUTOMATIONS.md).
 - **`tools/`** — `inspect_bed.py` (see your live bed) and `archive_history.py` with
@@ -65,6 +66,7 @@ feature, never all-or-nothing.
 | `binary_sensor` | In bed (occupancy) |
 | `sensor` | Sleep number, pressure*, sleep score, heart rate, respiratory rate, HRV, sleep duration, restful*, restless*, Connection (local/cloud, bed)* |
 | `number` | Sleep number (firmness) |
+| `select` | Base preset — Flat / Zero G / Read / Watch TV / Snore / Favorite (BLE; recovers severed base control) |
 | `switch` | Responsive Air; privacy pause (bed) |
 | `button` | Calibrate (bed); stop pump (bed) |
 

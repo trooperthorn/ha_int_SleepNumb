@@ -12,8 +12,6 @@ import asyncio
 from dataclasses import dataclass, field
 import logging
 
-import aiohttp
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME
 from homeassistant.core import HomeAssistant
@@ -52,6 +50,8 @@ class SleepNumberData:
     sleep: SleepNumberSleepDataCoordinator
     # Capability flags discovered at setup, surfaced to platforms.
     capabilities: dict[str, bool] = field(default_factory=dict)
+    # BLE transport, if a bed BLE address is configured (drives base presets).
+    ble: object | None = None
 
 
 class _BaseCoordinator(DataUpdateCoordinator[None]):
@@ -104,15 +104,15 @@ class SleepNumberStatusCoordinator(_BaseCoordinator):
         self.source = SOURCE_CLOUD
 
     async def _async_update_data(self) -> None:
-        # Prefer the local hub bridge when configured.
+        # Prefer a local transport (BLE or on-hub bridge) when configured.
         if self.local is not None:
             try:
                 snapshot = await self.local.status()
                 self._apply_local(snapshot)
-                self.source = SOURCE_LOCAL
+                self.source = getattr(self.local, "source_name", SOURCE_LOCAL)
                 return
-            except (aiohttp.ClientError, TimeoutError, ValueError, KeyError) as err:
-                _LOGGER.debug("Local bridge unavailable, falling back to cloud: %s", err)
+            except Exception as err:  # noqa: BLE001 - any local failure -> cloud
+                _LOGGER.debug("Local transport unavailable, using cloud: %s", err)
 
         # Cloud fallback.
         self.source = SOURCE_CLOUD

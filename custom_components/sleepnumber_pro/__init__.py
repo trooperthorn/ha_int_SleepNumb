@@ -15,7 +15,13 @@ from .sleepiq_local import (
     SleepIQLoginException,
     SleepIQTimeoutException,
 )
-from .const import CONF_LOCAL_HOST, CONF_LOCAL_PORT, CONF_LOCAL_TOKEN
+from .const import (
+    CONF_BLE_ADDRESS,
+    CONF_LOCAL_HOST,
+    CONF_LOCAL_PORT,
+    CONF_LOCAL_TOKEN,
+)
+from .bluetooth import BleBridgeClient
 from .local import DEFAULT_PORT, LocalBridgeClient
 from .coordinator import (
     SleepNumberConfigEntry,
@@ -31,6 +37,7 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
     Platform.NUMBER,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
 ]
@@ -61,6 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
         "foundation": any(bed.foundation.type for bed in client.beds.values()),
         "responsive_air": False,
         "local": False,
+        "ble": False,
     }
     for bed in client.beds.values():
         try:
@@ -70,9 +78,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
         except SleepIQAPIException as err:
             _LOGGER.debug("Responsive Air not available for %s: %s", bed.name, err)
 
-    # Optional local hub bridge (Phase 2). Preferred over cloud when reachable.
-    local: LocalBridgeClient | None = None
-    if host := (entry.data.get(CONF_LOCAL_HOST) or entry.options.get(CONF_LOCAL_HOST)):
+    # Local transports, preferred over cloud when reachable. Order of preference:
+    # BLE (no root, in-range) -> on-hub bridge (rooted) -> cloud fallback.
+    local: LocalBridgeClient | BleBridgeClient | None = None
+    ble: BleBridgeClient | None = None
+
+    if ble_addr := entry.data.get(CONF_BLE_ADDRESS):
+        ble = BleBridgeClient(hass, ble_addr)
+        capabilities["ble"] = await ble.available()
+        local = ble  # BLE is the preferred live transport
+        if not capabilities["ble"]:
+            _LOGGER.warning(
+                "Bed %s not reachable over BLE yet (need an in-range adapter or "
+                "proxy); using cloud until it is", ble_addr
+            )
+
+    if local is None and (
+        host := (entry.data.get(CONF_LOCAL_HOST) or entry.options.get(CONF_LOCAL_HOST))
+    ):
         local = LocalBridgeClient(
             session,
             host,
@@ -99,6 +122,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
         settings=settings,
         sleep=sleep,
         capabilities=capabilities,
+        ble=ble,
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

@@ -16,6 +16,7 @@ from custom_components.sleepnumber_pro.const import (
     SOURCE_CLOUD,
     SOURCE_LOCAL,
 )
+from custom_components.sleepnumber_pro.local import LocalBridgeClient
 from custom_components.sleepnumber_pro.local import LocalStatus
 
 
@@ -34,7 +35,9 @@ def local_entry() -> MockConfigEntry:
 
 
 def _fake_local(status_result=None, status_error=None) -> MagicMock:
-    client = MagicMock()
+    # spec against the real HTTP bridge so it has no auto-created `source_name`
+    # (the coordinator then resolves the source to "local", as in production).
+    client = MagicMock(spec=LocalBridgeClient)
     client.available = AsyncMock(return_value=True)
     if status_error is not None:
         client.status = AsyncMock(side_effect=status_error)

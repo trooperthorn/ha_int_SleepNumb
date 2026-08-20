@@ -81,10 +81,51 @@ config entry. To actually reach the radio you need one of:
   pattern for out-of-range BLE devices). Note only one connection can use an
   ESP32 proxy's radio at a time.
 
+## The MCR protocol (implemented)
+
+The `ffffd1fd-…` service is a UART-style channel speaking the **MCR** binary
+protocol — the same BAM command family the cloud `bamkey` endpoint and the on-hub
+`/bio` tool use. Two characteristics:
+
+- `…fee2` **MCR RX** — `write` (client → bed): commands.
+- `…fee1` **MCR TX** — `notify` (bed → client): responses.
+
+Frame: `[0x16 0x16] + 10-byte header + payload + CRC16` (Fletcher-16 over
+header+payload). Header carries a command class (`0x02` pump / `0x42` foundation),
+the bed's MCR address (last two bytes of its MAC — e.g. `64:DB:A0:0C:1E:58` →
+`0x1E58`), a function code, and a side/length byte. The codec lives in
+[`mcr.py`](../custom_components/sleepnumber_pro/mcr.py) and is unit-tested against
+the documented init vector.
+
+Functions used: init handshake (0), read pump status (18 → `[pump_on, L_SN, R_SN,
+L_pump, R_pump]`), set sleep number (17), foundation status (0x42/18 → head/foot
+positions), activate preset (0x42/21). **Presence over MCR is firmware-broken
+(always 0)**, so presence still comes from the cloud/pressure plane.
+
+**Foundation control works over BLE even though the cloud severed it** — that's
+what the *Base preset* select uses.
+
+> **Proxy gotcha:** MCR RX advertises *write-without-response*, but through an
+> ESPHome Bluetooth Proxy you **must** write **with** response — the proxy
+> silently drops write-without-response packets. This integration always writes
+> with response.
+
 ## Status in this integration
 
-- ✅ BLE **discovery** (manifest matcher + config-flow `bluetooth` step) — the
-  bed is recognised and its address recorded.
-- 🔶 BLE **transport** (read/write over the characteristics) — scaffolded; needs
-  your captured GATT to finish the command map. Once captured, it slots in ahead
-  of the bridge and cloud in the coordinator, exactly like the local bridge does.
+- ✅ BLE **discovery** — manifest matcher (service `ffffd1fd-…`, `09d23fae-…`,
+  manufacturer id 20051) + config-flow `bluetooth` step records the bed's address.
+- ✅ BLE **transport** — connect-on-demand via HA's Bluetooth stack, MCR
+  handshake, read sleep number, set sleep number, foundation status, and base
+  presets. Selected ahead of the on-hub bridge and cloud in the coordinator; the
+  **Connection** sensor shows `Bluetooth` when it's live.
+- 🔶 Head/foot *fine positioning* (raw foundation `SET`) is deferred pending safety
+  validation; presets cover the common moves.
+
+## Attribution
+
+The MCR/BAM protocol was reverse-engineered by the community from the SleepIQ app.
+This is an independent implementation from the public protocol notes; credit to
+[`JonGilmore/sleepnumber-ble`](https://github.com/JonGilmore/sleepnumber-ble),
+[`kristofferR/ha-adjustable-bed`](https://github.com/kristofferR/ha-adjustable-bed),
+and [`canning1295/BedRemote`](https://github.com/canning1295/BedRemote) for
+documenting the frame format and function codes.

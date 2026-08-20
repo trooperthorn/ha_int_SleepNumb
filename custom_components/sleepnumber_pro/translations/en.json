@@ -55,11 +55,24 @@
       "restless": { "name": "Restless time" },
       "connection": {
         "name": "Connection",
-        "state": { "local": "Local", "cloud": "Cloud" }
+        "state": { "ble": "Bluetooth", "local": "Local", "cloud": "Cloud" }
       }
     },
     "number": {
       "sleep_number": { "name": "Sleep number" }
+    },
+    "select": {
+      "base_preset": {
+        "name": "Base preset",
+        "state": {
+          "flat": "Flat",
+          "zero_g": "Zero G",
+          "read": "Read",
+          "watch_tv": "Watch TV",
+          "snore": "Snore",
+          "favorite": "Favorite"
+        }
+      }
     },
     "switch": {
       "responsive_air": { "name": "Responsive Air" },

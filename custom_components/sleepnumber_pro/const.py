@@ -46,8 +46,11 @@ PRIVACY = "privacy"
 CONNECTION = "connection"
 
 # Transport labels (also the state of the connection sensor)
+SOURCE_BLE = "ble"
 SOURCE_LOCAL = "local"
 SOURCE_CLOUD = "cloud"
+
+BASE_PRESET = "base_preset"
 
 ICON_OCCUPIED = "mdi:bed"
 ICON_EMPTY = "mdi:bed-empty"
