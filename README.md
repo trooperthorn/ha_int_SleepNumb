@@ -1,5 +1,7 @@
 # Sleep Number (SleepIQ) — Local-First for Home Assistant
 
+## SEE TOOLS ON HOW TO OBTAIN DATA, and How SleepNumber is able to determine the number of times you have Bedroom Activies.
+
 A rework of the Home Assistant Sleep Number / SleepIQ integration, engineered to **survive the SleepIQ cloud** and to exceed the Home Assistant **Platinum** quality scale.
 
 > **Why this exists:** Sleep Number filed for bankruptcy and the SleepIQ cloud is
