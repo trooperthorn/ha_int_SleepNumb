@@ -15,18 +15,19 @@ A rework of the Home Assistant Sleep Number / SleepIQ integration, engineered to
 ## Architecture: local-first, cloud-fallback
 
 The integration always prefers the transport closest to the hardware that is
-currently answering:
+currently answering, and falls back automatically:
 
-| Layer | Transport | Status |
-|-------|-----------|--------|
-| 1 | **Local hub driver** — an on-hub bridge daemon fronting the pump's serial protocol on the LAN | preferred (requires one-time UART root) |
-| 2 | **Cloud driver (Cognito)** — hardened REST path, JWT auth, full sleep-health archive | fallback, works today |
-| 3 | Coordinator & capability model — merges live transports into one bed model | — |
-| 4 | Home Assistant entities, services, blueprints | — |
+| Priority | Transport | Status |
+|----------|-----------|--------|
+| 1 | **Bluetooth LE** — the hub's own BLE radio; local, **no hardware modification**, in-range only | discovery shipped; command map needs a one-time GATT capture ([`docs/BLUETOOTH.md`](docs/BLUETOOTH.md)) |
+| 2 | **On-hub bridge** — a LAN daemon over the pump protocol; local, whole-home | shipped; needs a one-time UART root ([`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)) |
+| 3 | **Cloud (Cognito)** — hardened REST, JWT auth, full sleep-health archive | live now; automatic fallback |
 
-The same intent (`set_sleep_number`, `read presence`, …) maps to a pump serial
-command locally, a REST call over the cloud, and degrades cleanly when neither is
-available — feature by feature, never all-or-nothing.
+The status coordinator tries the local bridge first and falls back to the cloud
+each cycle, exposing which path is active as a **Connection** sensor. The same
+intent (`set_sleep_number`, `read presence`, …) maps to a local command when a
+local transport answers and a cloud call when it doesn't — degrading feature by
+feature, never all-or-nothing.
 
 ## Status
 
@@ -40,14 +41,18 @@ available — feature by feature, never all-or-nothing.
 ### What's in the box
 
 - **`custom_components/sleepnumber_pro/`** — the integration: Cognito config flow
-  with reauth, DHCP discovery (`64:DB:A0:*`), three coordinators, a hub device and
-  per-sleeper devices, diagnostics, and entities for presence, sleep number,
-  pressure, sleep score, heart rate, respiration, HRV, restful/restless durations,
-  Responsive Air, privacy pause, calibrate, and stop-pump.
+  with reauth, **reconfigure**, DHCP + **Bluetooth LE discovery**, three
+  coordinators with **local-first / cloud-fallback**, a hub device and per-sleeper
+  devices, diagnostics, and entities for presence, sleep number, pressure, sleep
+  score, heart rate, respiration, HRV, restful/restless durations, Responsive Air,
+  privacy pause, calibrate, stop-pump, and a **Connection** sensor (local vs cloud).
 - **`custom_components/sleepnumber_pro/sleepiq_local/`** — the forked library
   (Cognito default, graceful 404, Responsive Air), verified live end-to-end.
 - **`bridge/`** + **[`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)** — the on-hub bridge
-  daemon and the UART root procedure that make the bed fully local.
+  daemon and the UART root procedure (whole-home local path).
+- **Bluetooth** — [`docs/BLUETOOTH.md`](docs/BLUETOOTH.md) + `tools/ble_scan.py`:
+  the no-root local path over the hub's own BLE radio; capture your bed's GATT to
+  finish the command map.
 - **`blueprints/`** — five cross-integration automations (weather, solar, severe
   weather, climate, goodnight). See [`docs/AUTOMATIONS.md`](docs/AUTOMATIONS.md).
 - **`tools/`** — `inspect_bed.py` (see your live bed) and `archive_history.py` with
@@ -58,7 +63,7 @@ available — feature by feature, never all-or-nothing.
 | Platform | Entities |
 |----------|----------|
 | `binary_sensor` | In bed (occupancy) |
-| `sensor` | Sleep number, pressure*, sleep score, heart rate, respiratory rate, HRV, sleep duration, restful*, restless* |
+| `sensor` | Sleep number, pressure*, sleep score, heart rate, respiratory rate, HRV, sleep duration, restful*, restless*, Connection (local/cloud, bed)* |
 | `number` | Sleep number (firmness) |
 | `switch` | Responsive Air; privacy pause (bed) |
 | `button` | Calibrate (bed); stop pump (bed) |

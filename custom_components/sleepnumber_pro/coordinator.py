@@ -12,6 +12,8 @@ import asyncio
 from dataclasses import dataclass, field
 import logging
 
+import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME
 from homeassistant.core import HomeAssistant
@@ -24,10 +26,14 @@ from .sleepiq_local import (
     SleepIQLoginException,
     SleepIQTimeoutException,
 )
+from .sleepiq_local.consts import Side
+from .local import LocalBridgeClient, LocalStatus
 from .const import (
     DOMAIN,
     SETTINGS_INTERVAL,
     SLEEP_DATA_INTERVAL,
+    SOURCE_CLOUD,
+    SOURCE_LOCAL,
     STATUS_INTERVAL,
 )
 
@@ -84,12 +90,32 @@ class _BaseCoordinator(DataUpdateCoordinator[None]):
 
 
 class SleepNumberStatusCoordinator(_BaseCoordinator):
-    """Live bed-sensor plane: presence, sleep number, pressure (+ foundation if present)."""
+    """Live bed-sensor plane: presence, sleep number, pressure (+ foundation if present).
 
-    def __init__(self, hass, entry, client) -> None:
+    Local-first: when an on-hub bridge is configured and answering, presence and
+    sleep number come straight from the hub (no cloud). If the bridge is
+    unreachable, this transparently falls back to the cloud for that cycle. The
+    active transport is exposed as ``source`` for the connection sensor.
+    """
+
+    def __init__(self, hass, entry, client, local: LocalBridgeClient | None = None) -> None:
         super().__init__(hass, entry, client, "status", STATUS_INTERVAL)
+        self.local = local
+        self.source = SOURCE_CLOUD
 
     async def _async_update_data(self) -> None:
+        # Prefer the local hub bridge when configured.
+        if self.local is not None:
+            try:
+                snapshot = await self.local.status()
+                self._apply_local(snapshot)
+                self.source = SOURCE_LOCAL
+                return
+            except (aiohttp.ClientError, TimeoutError, ValueError, KeyError) as err:
+                _LOGGER.debug("Local bridge unavailable, falling back to cloud: %s", err)
+
+        # Cloud fallback.
+        self.source = SOURCE_CLOUD
         try:
             await self.client.fetch_bed_statuses()
         except (SleepIQLoginException, SleepIQTimeoutException, SleepIQAPIException) as err:
@@ -103,6 +129,25 @@ class SleepNumberStatusCoordinator(_BaseCoordinator):
                 await bed.foundation.update_foundation_status()
             except SleepIQAPIException as err:
                 _LOGGER.debug("Foundation status unavailable for %s: %s", bed.name, err)
+
+    def _apply_local(self, snap: LocalStatus) -> None:
+        """Merge a local bridge snapshot into the bed/sleeper objects.
+
+        The bridge covers the pump plane (presence + sleep number). Cloud-only
+        fields such as raw pressure keep their last value until a cloud cycle.
+        """
+        for bed in self.client.beds.values():
+            for sleeper in bed.sleepers:
+                if sleeper.side == Side.LEFT:
+                    if snap.in_bed_left is not None:
+                        sleeper.in_bed = snap.in_bed_left
+                    if snap.sleep_number_left is not None:
+                        sleeper.sleep_number = snap.sleep_number_left
+                elif sleeper.side == Side.RIGHT:
+                    if snap.in_bed_right is not None:
+                        sleeper.in_bed = snap.in_bed_right
+                    if snap.sleep_number_right is not None:
+                        sleeper.sleep_number = snap.sleep_number_right
 
 
 class SleepNumberSettingsCoordinator(_BaseCoordinator):

@@ -3,10 +3,22 @@
     "step": {
       "user": {
         "title": "Sleep Number (SleepIQ) account",
-        "description": "Sign in with your SleepIQ account. This integration prefers your local hub and falls back to the cloud automatically.",
+        "description": "Sign in with your SleepIQ account. If you have rooted your hub and installed the local bridge, add its address to prefer local, cloud-free operation.",
         "data": {
           "username": "Email",
-          "password": "Password"
+          "password": "Password",
+          "local_host": "Local hub address (optional)",
+          "local_token": "Local bridge token (optional)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Sleep Number",
+        "description": "Update your credentials or add the local hub bridge address to switch to local-first operation.",
+        "data": {
+          "username": "Email",
+          "password": "Password",
+          "local_host": "Local hub address (optional)",
+          "local_token": "Local bridge token (optional)"
         }
       },
       "reauth_confirm": {
@@ -23,7 +35,8 @@
     },
     "abort": {
       "already_configured": "This SleepIQ account is already set up.",
-      "reauth_successful": "Re-authentication was successful."
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "Reconfiguration was successful."
     }
   },
   "entity": {
@@ -39,7 +52,11 @@
       "hrv": { "name": "Heart rate variability" },
       "sleep_duration": { "name": "Sleep duration" },
       "restful": { "name": "Restful time" },
-      "restless": { "name": "Restless time" }
+      "restless": { "name": "Restless time" },
+      "connection": {
+        "name": "Connection",
+        "state": { "local": "Local", "cloud": "Cloud" }
+      }
     },
     "number": {
       "sleep_number": { "name": "Sleep number" }

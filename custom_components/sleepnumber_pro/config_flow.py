@@ -14,16 +14,37 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .sleepiq_local import AsyncSleepIQ, SleepIQLoginException, SleepIQTimeoutException
-from .const import DOMAIN
+from .const import CONF_BLE_ADDRESS, CONF_LOCAL_HOST, CONF_LOCAL_TOKEN, DOMAIN
 
 if TYPE_CHECKING:
+    from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
     from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER = vol.Schema(
-    {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str}
-)
+
+def _user_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
+    """Credential form, with an optional local hub bridge address."""
+    defaults = defaults or {}
+    return vol.Schema(
+        {
+            vol.Required(CONF_USERNAME, default=defaults.get(CONF_USERNAME)): str,
+            vol.Required(CONF_PASSWORD): str,
+            vol.Optional(
+                CONF_LOCAL_HOST,
+                description={"suggested_value": defaults.get(CONF_LOCAL_HOST)},
+            ): str,
+            vol.Optional(
+                CONF_LOCAL_TOKEN,
+                description={"suggested_value": defaults.get(CONF_LOCAL_TOKEN)},
+            ): str,
+        }
+    )
+
+
+def _clean(data: dict[str, Any]) -> dict[str, Any]:
+    """Drop empty optional values so blank strings are never stored."""
+    return {k: v for k, v in data.items() if v not in (None, "")}
 
 
 async def _validate(hass: HomeAssistant, data: dict[str, Any]) -> str | None:
@@ -49,23 +70,45 @@ class SleepNumberConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Collect credentials from the user."""
+        """Collect credentials (and optionally a local hub address)."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            await self.async_set_unique_id(user_input[CONF_USERNAME].lower())
+            data = _clean(user_input)
+            if ble := self._discovered.get("ble"):
+                data.setdefault(CONF_BLE_ADDRESS, ble)
+            await self.async_set_unique_id(data[CONF_USERNAME].lower())
             self._abort_if_unique_id_configured()
-            if error := await _validate(self.hass, user_input):
+            if error := await _validate(self.hass, data):
                 errors["base"] = error
             else:
-                return self.async_create_entry(
-                    title=user_input[CONF_USERNAME], data=user_input
-                )
+                return self.async_create_entry(title=data[CONF_USERNAME], data=data)
 
+        defaults: dict[str, Any] = {}
+        if host := self._discovered.get("host"):
+            defaults[CONF_LOCAL_HOST] = host
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER,
+            data_schema=_user_schema(defaults),
             errors=errors,
-            description_placeholders=self._discovered or None,
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change credentials or add/update the local hub bridge address."""
+        errors: dict[str, str] = {}
+        entry = self._get_reconfigure_entry()
+        if user_input is not None:
+            data = _clean({**entry.data, **user_input})
+            if error := await _validate(self.hass, data):
+                errors["base"] = error
+            else:
+                return self.async_update_reload_and_abort(entry, data=data)
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=_user_schema(dict(entry.data)),
+            errors=errors,
         )
 
     async def async_step_dhcp(
@@ -79,6 +122,26 @@ class SleepNumberConfigFlow(ConfigFlow, domain=DOMAIN):
         # A fresh install still needs cloud credentials, so surface the discovered
         # hub address and hand off to the user step.
         self._discovered = {"host": discovery_info.ip}
+        return await self.async_step_user()
+
+    async def async_step_bluetooth(
+        self, discovery_info: BluetoothServiceInfoBleak
+    ) -> ConfigFlowResult:
+        """Handle the bed hub found over Bluetooth LE.
+
+        BLE is a no-root local path: the hub's own radio, reachable within range.
+        We record its address for the BLE transport; the account still sets up
+        with cloud credentials (and can go local via bridge or BLE afterwards).
+        """
+        if entries := self._async_current_entries():
+            entry = entries[0]
+            if entry.data.get(CONF_BLE_ADDRESS) != discovery_info.address:
+                self.hass.config_entries.async_update_entry(
+                    entry,
+                    data={**entry.data, CONF_BLE_ADDRESS: discovery_info.address},
+                )
+            return self.async_abort(reason="already_configured")
+        self._discovered = {"ble": discovery_info.address}
         return await self.async_step_user()
 
     async def async_step_reauth(

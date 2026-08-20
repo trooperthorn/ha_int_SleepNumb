@@ -15,6 +15,8 @@ from .sleepiq_local import (
     SleepIQLoginException,
     SleepIQTimeoutException,
 )
+from .const import CONF_LOCAL_HOST, CONF_LOCAL_PORT, CONF_LOCAL_TOKEN
+from .local import DEFAULT_PORT, LocalBridgeClient
 from .coordinator import (
     SleepNumberConfigEntry,
     SleepNumberData,
@@ -58,6 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
     capabilities = {
         "foundation": any(bed.foundation.type for bed in client.beds.values()),
         "responsive_air": False,
+        "local": False,
     }
     for bed in client.beds.values():
         try:
@@ -67,7 +70,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
         except SleepIQAPIException as err:
             _LOGGER.debug("Responsive Air not available for %s: %s", bed.name, err)
 
-    status = SleepNumberStatusCoordinator(hass, entry, client)
+    # Optional local hub bridge (Phase 2). Preferred over cloud when reachable.
+    local: LocalBridgeClient | None = None
+    if host := (entry.data.get(CONF_LOCAL_HOST) or entry.options.get(CONF_LOCAL_HOST)):
+        local = LocalBridgeClient(
+            session,
+            host,
+            int(entry.data.get(CONF_LOCAL_PORT, DEFAULT_PORT)),
+            entry.data.get(CONF_LOCAL_TOKEN),
+        )
+        capabilities["local"] = await local.available()
+        if not capabilities["local"]:
+            _LOGGER.warning(
+                "Local bridge at %s did not answer; using cloud until it does", host
+            )
+
+    status = SleepNumberStatusCoordinator(hass, entry, client, local=local)
     settings = SleepNumberSettingsCoordinator(hass, entry, client)
     sleep = SleepNumberSleepDataCoordinator(hass, entry, client)
 

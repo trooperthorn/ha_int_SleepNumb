@@ -2,6 +2,11 @@
   "domain": "sleepnumber_pro",
   "name": "Sleep Number (SleepIQ) Local-First",
   "codeowners": ["@trooperthorn"],
+  "bluetooth": [
+    {
+      "service_uuid": "09d23fae-90e6-44c2-95b6-0b3d0f1abf25"
+    }
+  ],
   "config_flow": true,
   "dependencies": [],
   "dhcp": [

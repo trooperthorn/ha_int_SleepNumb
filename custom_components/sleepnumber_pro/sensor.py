@@ -22,6 +22,7 @@ from ._compat import AddConfigEntryEntitiesCallback
 
 from .sleepiq_local import SleepIQSleeper
 from .const import (
+    CONNECTION,
     HEART_RATE,
     HRV,
     PRESSURE,
@@ -31,9 +32,11 @@ from .const import (
     SLEEP_DURATION,
     SLEEP_NUMBER,
     SLEEP_SCORE,
+    SOURCE_CLOUD,
+    SOURCE_LOCAL,
 )
 from .coordinator import SleepNumberConfigEntry
-from .entity import SleepNumberSleeperEntity
+from .entity import SleepNumberBedEntity, SleepNumberSleeperEntity
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -141,8 +144,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sleep Number sensors."""
     data = entry.runtime_data
-    entities: list[SleepNumberSensor] = []
+    entities: list[SensorEntity] = []
     for bed in data.client.beds.values():
+        entities.append(ConnectionSensor(data.status, bed))
         for sleeper in bed.sleepers:
             entities.extend(
                 SleepNumberSensor(data.status, bed, sleeper, desc)
@@ -153,6 +157,28 @@ async def async_setup_entry(
                 for desc in SLEEP_SENSORS
             )
     async_add_entities(entities)
+
+
+class ConnectionSensor(SleepNumberBedEntity, SensorEntity):
+    """Which transport is currently serving this bed: local hub or cloud."""
+
+    _attr_translation_key = CONNECTION
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = [SOURCE_LOCAL, SOURCE_CLOUD]
+
+    def __init__(self, coordinator, bed) -> None:
+        super().__init__(coordinator, bed)
+        self._attr_unique_id = f"{bed.id}_{CONNECTION}"
+
+    @callback
+    def _async_update_attrs(self) -> None:
+        self._attr_native_value = getattr(self.coordinator, "source", SOURCE_CLOUD)
+        self._attr_icon = (
+            "mdi:lan-connect"
+            if self._attr_native_value == SOURCE_LOCAL
+            else "mdi:cloud-outline"
+        )
 
 
 class SleepNumberSensor(SleepNumberSleeperEntity, SensorEntity):
