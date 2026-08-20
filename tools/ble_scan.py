@@ -21,7 +21,12 @@ from __future__ import annotations
 import asyncio
 import sys
 
-SN_SERVICE = "09d23fae-90e6-44c2-95b6-0b3d0f1abf25"
+# Confirmed on a 360-gen Sleep Number hub, plus the Climate 360 variant.
+SN_SERVICES = {
+    "ffffd1fd-388d-938b-344a-939d1f6efee0",
+    "09d23fae-90e6-44c2-95b6-0b3d0f1abf25",
+}
+SN_MANUFACTURER_ID = 20051  # 0x4E53 = "SN"
 
 try:
     from bleak import BleakClient, BleakScanner
@@ -30,11 +35,13 @@ except ImportError:
     raise SystemExit(2)
 
 
-def _looks_like_bed(name: str | None, uuids: list[str]) -> bool:
+def _looks_like_bed(name: str | None, uuids: list[str], mfr: dict | None) -> bool:
     name = (name or "").lower()
-    if any(k in name for k in ("sleep", "sn ", "select comfort", "flexfit")):
+    if any(k in name for k in ("sleep", "select comfort", "flexfit")):
         return True
-    return SN_SERVICE.lower() in [u.lower() for u in uuids]
+    if SN_MANUFACTURER_ID in (mfr or {}):
+        return True
+    return bool(SN_SERVICES & {u.lower() for u in uuids})
 
 
 async def scan() -> None:
@@ -43,8 +50,14 @@ async def scan() -> None:
     hits = []
     for dev, adv in devices.values():
         uuids = list(adv.service_uuids or [])
-        flag = "  <-- likely bed" if _looks_like_bed(adv.local_name or dev.name, uuids) else ""
-        print(f"  {dev.address}  rssi={adv.rssi}  name={adv.local_name or dev.name!r}{flag}")
+        flag = (
+            "  <-- likely bed"
+            if _looks_like_bed(adv.local_name or dev.name, uuids, adv.manufacturer_data)
+            else ""
+        )
+        mfr = adv.manufacturer_data or {}
+        mfr_str = f"  mfr={ {k: v.hex() for k, v in mfr.items()} }" if mfr else ""
+        print(f"  {dev.address}  rssi={adv.rssi}  name={adv.local_name or dev.name!r}{mfr_str}{flag}")
         if flag:
             hits.append(dev.address)
     if hits:

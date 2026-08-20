@@ -13,12 +13,37 @@ This is why the integration treats transports in this order:
    (see [`LOCAL_ROOT.md`](LOCAL_ROOT.md)).
 3. **Cloud** — fallback, works everywhere until Sleep Number shuts it down.
 
+## Confirmed on this hub (360-gen, 2026-08-20)
+
+A live advertisement captured through a Home Assistant Bluetooth Proxy:
+
+```json
+{"address":"64:DB:A0:0C:1E:58","rssi":-80,"connectable":true,
+ "manufacturer_data":{"20051":"9206000000"},
+ "service_uuids":["ffffd1fd-388d-938b-344a-939d1f6efee0"],
+ "source":"00:01:95:CC:31:70"}
+```
+
+- **Same MAC as the hub's Wi-Fi** (`64:DB:A0:0C:1E:58`) — the BLE radio and the
+  networked hub are one device.
+- **`connectable: true`** — GATT connections are possible (via the proxy).
+- **Manufacturer id `20051` = `0x4E53` = "SN"**, payload `92 06 00 00 00`. This
+  small payload may encode live state — if it changes with presence or sleep
+  number, HA can read it **passively from adverts, with no GATT connection**.
+- **Service UUID `ffffd1fd-388d-938b-344a-939d1f6efee0`** — this 360-gen hub's
+  service (the Climate 360 uses a different one). The integration matches both.
+
+Practical notes for proxy use: RSSI **−80** is usable but marginal — put the
+proxy closer to the bed for reliable connect/read/write. An ESP32 proxy holds
+**one** active GATT connection at a time, so the bed occupies that slot while
+connected.
+
 ## What's known
 
-- Sleep Number smart hubs advertise a **custom GATT service**
-  `09d23fae-90e6-44c2-95b6-0b3d0f1abf25` (observed on the Climate 360) containing
-  several **read / write / notify** characteristics — so BLE supports both
-  reading status and sending commands, not just fire-and-forget control.
+- Sleep Number smart hubs advertise a **custom GATT service** (confirmed
+  `ffffd1fd-…` here; `09d23fae-…` on the Climate 360) containing several
+  **read / write / notify** characteristics — so BLE supports both reading status
+  and sending commands, not just fire-and-forget control.
 - The community has reverse-engineered the SleepIQ app's BLE protocol for local
   control (left/right firmness presets, under-bed light, with presence detection
   in progress). The exact characteristic-to-function mapping and command bytes
