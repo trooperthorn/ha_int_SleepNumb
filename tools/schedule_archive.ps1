@@ -1,11 +1,4 @@
-# Register (or update) a nightly Windows Scheduled Task that preserves your
-# SleepIQ history via archive_nightly.ps1. Runs in your user context at 03:30,
-# so no Windows password is stored. Credentials for SleepIQ itself come from the
-# git-ignored .siq_env file (see archive_nightly.ps1).
-#
-#   powershell -ExecutionPolicy Bypass -File tools\schedule_archive.ps1
-#
-# Remove with:  Unregister-ScheduledTask -TaskName "SleepNumber History Archive" -Confirm:$false
+# Registers the nightly SleepIQ history archive task; see docs/operations.md.
 
 param(
     [string]$Time = "03:30",

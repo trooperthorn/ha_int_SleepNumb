@@ -9,8 +9,8 @@ now reports as absent must not blank out the live bed-sensor entities.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
 import logging
+from dataclasses import dataclass, field
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME
@@ -18,14 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .sleepiq_local import (
-    AsyncSleepIQ,
-    SleepIQAPIException,
-    SleepIQLoginException,
-    SleepIQTimeoutException,
-)
-from .sleepiq_local.consts import Side
-from .local import LocalBridgeClient, LocalStatus
+from .bluetooth import BleBridgeClient
 from .const import (
     DOMAIN,
     SETTINGS_INTERVAL,
@@ -34,6 +27,14 @@ from .const import (
     SOURCE_LOCAL,
     STATUS_INTERVAL,
 )
+from .local import LocalBridgeClient, LocalStatus
+from .sleepiq_local import (
+    AsyncSleepIQ,
+    SleepIQAPIException,
+    SleepIQLoginException,
+    SleepIQTimeoutException,
+)
+from .sleepiq_local.consts import Side
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -98,7 +99,13 @@ class SleepNumberStatusCoordinator(_BaseCoordinator):
     active transport is exposed as ``source`` for the connection sensor.
     """
 
-    def __init__(self, hass, entry, client, local: LocalBridgeClient | None = None) -> None:
+    def __init__(
+        self,
+        hass,
+        entry,
+        client,
+        local: LocalBridgeClient | BleBridgeClient | None = None,
+    ) -> None:
         super().__init__(hass, entry, client, "status", STATUS_INTERVAL)
         self.local = local
         self.source = SOURCE_CLOUD

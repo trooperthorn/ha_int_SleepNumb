@@ -1,7 +1,6 @@
 {
   "domain": "sleepnumber_pro",
   "name": "Sleep Number (SleepIQ) Local-First",
-  "codeowners": ["@trooperthorn"],
   "bluetooth": [
     {
       "service_uuid": "ffffd1fd-388d-938b-344a-939d1f6efee0"
@@ -13,6 +12,7 @@
       "manufacturer_id": 20051
     }
   ],
+  "codeowners": ["@trooperthorn"],
   "config_flow": true,
   "dependencies": [],
   "dhcp": [
@@ -26,5 +26,5 @@
   "issue_tracker": "https://github.com/trooperthorn/ha_int_SleepNumb/issues",
   "loggers": ["sleepiq_local"],
   "requirements": [],
-  "version": "0.1.0-dev"
+  "version": "2026.09.03.1"
 }

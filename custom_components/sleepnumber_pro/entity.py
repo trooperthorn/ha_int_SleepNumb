@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .sleepiq_local import SleepIQBed, SleepIQSleeper
 from .const import DOMAIN, MANUFACTURER
+from .sleepiq_local import SleepIQBed, SleepIQSleeper
 
 
 def bed_device_info(bed: SleepIQBed) -> DeviceInfo:
@@ -24,14 +24,22 @@ def bed_device_info(bed: SleepIQBed) -> DeviceInfo:
     )
 
 
-def sleeper_device_info(bed: SleepIQBed, sleeper: SleepIQSleeper) -> DeviceInfo:
-    """Device for one sleeper (a side of the bed), linked to the bed hub."""
+def sleeper_device_info(
+    hass: HomeAssistant, config_entry_id: str, bed: SleepIQBed, sleeper: SleepIQSleeper
+) -> DeviceInfo:
+    """Device for one sleeper (a side of the bed), linked to the bed hub.
+
+    The bed hub device must already be registered for this config entry;
+    __init__.py registers it before forwarding platforms.
+    """
     return DeviceInfo(
         identifiers={(DOMAIN, f"{bed.id}_{sleeper.sleeper_id}")},
         manufacturer=MANUFACTURER,
         name=f"{bed.name} {sleeper.name}",
         model=f"{bed.model} side",
-        via_device=(DOMAIN, bed.id),
+        via_device_id=dr.async_get_device_id_by_identifier(
+            hass, (DOMAIN, bed.id), config_entry_id=config_entry_id
+        ),
     )
 
 
@@ -63,6 +71,8 @@ class SleepNumberSleeperEntity(SleepNumberBedEntity):
     def __init__(self, coordinator, bed: SleepIQBed, sleeper: SleepIQSleeper, key: str) -> None:
         self.sleeper = sleeper
         super().__init__(coordinator, bed)
-        self._attr_device_info = sleeper_device_info(bed, sleeper)
+        self._attr_device_info = sleeper_device_info(
+            coordinator.hass, coordinator.config_entry.entry_id, bed, sleeper
+        )
         self._attr_unique_id = f"{sleeper.sleeper_id}_{key}"
         self._attr_translation_key = key

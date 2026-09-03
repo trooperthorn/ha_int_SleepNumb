@@ -16,8 +16,7 @@ from custom_components.sleepnumber_pro.const import (
     SOURCE_CLOUD,
     SOURCE_LOCAL,
 )
-from custom_components.sleepnumber_pro.local import LocalBridgeClient
-from custom_components.sleepnumber_pro.local import LocalStatus
+from custom_components.sleepnumber_pro.local import LocalBridgeClient, LocalStatus
 
 
 @pytest.fixture

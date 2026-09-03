@@ -5,7 +5,7 @@ asyncio_default_fixture_loop_scope = "function"
 norecursedirs = ["custom_components/sleepnumber_pro/sleepiq_local"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 100
 
 [tool.ruff.lint]
@@ -14,3 +14,7 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "custom_components/sleepnumber_pro/sleepiq_local/*" = ["ALL"]
+
+[[tool.mypy.overrides]]
+module = "sleepnumber_pro.sleepiq_local.*"
+ignore_errors = true

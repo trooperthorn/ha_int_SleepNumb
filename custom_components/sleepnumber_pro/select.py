@@ -12,12 +12,12 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import mcr
 from ._compat import AddConfigEntryEntitiesCallback
 from .const import BASE_PRESET
 from .coordinator import SleepNumberConfigEntry
 from .entity import sleeper_device_info
 from .sleepiq_local.consts import Side
-from . import mcr
 
 # Human labels -> MCR preset codes (per-sleeper side).
 PRESET_OPTIONS = {
@@ -60,7 +60,9 @@ class BasePresetSelect(CoordinatorEntity, SelectEntity):
         self.bed = bed
         self.sleeper = sleeper
         self._ble = ble
-        self._attr_device_info = sleeper_device_info(bed, sleeper)
+        self._attr_device_info = sleeper_device_info(
+            coordinator.hass, coordinator.config_entry.entry_id, bed, sleeper
+        )
         self._attr_unique_id = f"{sleeper.sleeper_id}_{BASE_PRESET}"
         self._attr_current_option = None
 

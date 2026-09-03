@@ -38,7 +38,6 @@ function Get-Median {
     return ($s[$n / 2 - 1] + $s[$n / 2]) / 2
 }
 
-# ---------------------------------------------------------------- load sessions
 $sleepers = @{}   # name -> list of session objects
 foreach ($dir in Get-ChildItem -Path $HistoryPath -Directory) {
     $name = ($dir.Name -split '_')[0]
@@ -66,7 +65,6 @@ foreach ($dir in Get-ChildItem -Path $HistoryPath -Directory) {
         (Get-ChildItem -Path $dir.FullName -Filter '*.json').Count)
 }
 
-# ---------------------------------------------------------------- baselines
 $baseline = @{}
 foreach ($name in $sleepers.Keys) {
     $hrs = @($sleepers[$name] | Where-Object { $_.TotalSec -gt 14400 -and $_.Hr -gt 0 } |
@@ -85,7 +83,6 @@ function Test-Elevated {
             ($Session.Restless / $Session.TotalSec) -ge $RestlessFraction)
 }
 
-# ---------------------------------------------------------------- metrics
 function Show-Metrics {
     param([string]$Label, [object[]]$Events)
     Write-Host ""
@@ -131,13 +128,11 @@ function Show-Metrics {
     if ($hrAvg) { Write-Host ("  Avg event HR : {0:n0} bpm" -f $hrAvg) }
 }
 
-# ---------------------------------------------------------------- solo events
 foreach ($name in $sleepers.Keys) {
     $solo = @($sleepers[$name] | Where-Object { $_.TotalSec -le $maxSec -and (Test-Elevated $_) })
     Show-Metrics ("SOLO candidate events - {0}" -f $name) $solo
 }
 
-# ---------------------------------------------------------------- joint tiers
 $names = @($sleepers.Keys)
 if ($names.Count -ge 2) {
     $a = @($sleepers[$names[0]] | Where-Object { $_.TotalSec -le $maxSec })

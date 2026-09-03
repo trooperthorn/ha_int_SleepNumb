@@ -10,6 +10,8 @@ A rework of the Home Assistant Sleep Number / SleepIQ integration, engineered to
 
 📋 **[Audit, protocol map & architecture](https://claude.ai/code/artifact/e9014191-8db3-4c27-80c8-13bbae897622)** — the full write-up this repo implements.
 
+See [`docs/README.md`](docs/README.md) for the full documentation index.
+
 ---
 
 ## Architecture: local-first, cloud-fallback

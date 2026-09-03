@@ -7,28 +7,30 @@ import logging
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from .sleepiq_local import (
-    AsyncSleepIQ,
-    SleepIQAPIException,
-    SleepIQLoginException,
-    SleepIQTimeoutException,
-)
+from .bluetooth import BleBridgeClient
 from .const import (
     CONF_BLE_ADDRESS,
     CONF_LOCAL_HOST,
     CONF_LOCAL_PORT,
     CONF_LOCAL_TOKEN,
 )
-from .bluetooth import BleBridgeClient
-from .local import DEFAULT_PORT, LocalBridgeClient
 from .coordinator import (
     SleepNumberConfigEntry,
     SleepNumberData,
     SleepNumberSettingsCoordinator,
     SleepNumberSleepDataCoordinator,
     SleepNumberStatusCoordinator,
+)
+from .entity import bed_device_info
+from .local import DEFAULT_PORT, LocalBridgeClient
+from .sleepiq_local import (
+    AsyncSleepIQ,
+    SleepIQAPIException,
+    SleepIQLoginException,
+    SleepIQTimeoutException,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -124,6 +126,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
         capabilities=capabilities,
         ble=ble,
     )
+
+    # Register the bed hub devices before the platforms run, so sleeper
+    # entities can link via_device_id to an already-registered parent.
+    device_registry = dr.async_get(hass)
+    for bed in client.beds.values():
+        device_registry.async_get_or_create(
+            config_entry_id=entry.entry_id, **bed_device_info(bed)
+        )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

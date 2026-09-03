@@ -18,9 +18,8 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
-from ._compat import AddConfigEntryEntitiesCallback
 
-from .sleepiq_local import SleepIQSleeper
+from ._compat import AddConfigEntryEntitiesCallback
 from .const import (
     CONNECTION,
     HEART_RATE,
@@ -38,6 +37,7 @@ from .const import (
 )
 from .coordinator import SleepNumberConfigEntry
 from .entity import SleepNumberBedEntity, SleepNumberSleeperEntity
+from .sleepiq_local import SleepIQSleeper
 
 
 @dataclass(frozen=True, kw_only=True)

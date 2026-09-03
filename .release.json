@@ -1,0 +1,8 @@
+{
+  "tag_prefix": "v",
+  "timezone": "America/Chicago",
+  "release_paths": ["custom_components/sleepnumber_pro"],
+  "version_fields": [
+    {"path": "custom_components/sleepnumber_pro/manifest.json", "kind": "json", "key": "version"}
+  ]
+}

@@ -8,7 +8,6 @@ module simply reports itself unavailable.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass
 
@@ -86,7 +85,7 @@ class LocalBridgeClient:
         try:
             data = await self._get("/health")
             return bool(data.get("ok"))
-        except (aiohttp.ClientError, asyncio.TimeoutError):
+        except (TimeoutError, aiohttp.ClientError):
             return False
 
     async def status(self) -> LocalStatus:
