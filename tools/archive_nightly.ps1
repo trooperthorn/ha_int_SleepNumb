@@ -1,15 +1,4 @@
-# Nightly wrapper for archive_history.py.
-#
-# Reads credentials from a local, git-ignored ".siq_env" file (KEY=VALUE lines)
-# so no password is ever stored in the scheduled task or in the repo. Create it
-# next to this repo root:
-#
-#   SIQ_EMAIL=you@example.com
-#   SIQ_PASS=your-password
-#   # optional: SIQ_ARCHIVE=D:\somewhere\sleepiq-archive
-#   # optional: SIQ_PYTHON=C:\path\to\python.exe
-#
-# Then register the nightly task with tools\schedule_archive.ps1.
+# Nightly wrapper for archive_history.py; see docs/operations.md.
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot

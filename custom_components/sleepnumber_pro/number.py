@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.core import HomeAssistant, callback
-from ._compat import AddConfigEntryEntitiesCallback
 
+from ._compat import AddConfigEntryEntitiesCallback
 from .const import SLEEP_NUMBER
 from .coordinator import SleepNumberConfigEntry
 from .entity import SleepNumberSleeperEntity

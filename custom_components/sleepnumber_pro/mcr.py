@@ -94,8 +94,6 @@ def build_frame(
     return SYNC + body + bytes([(crc >> 8) & 0xFF, crc & 0xFF])
 
 
-# --- command builders -------------------------------------------------------
-
 def build_init() -> bytes:
     """Handshake that must precede any query (8-byte zero token accepted)."""
     return build_frame(CMD_PUMP, STATUS_PUMP, FUNC_INIT, side=0, payload=bytes(8))
@@ -132,8 +130,6 @@ def build_preset(bed_addr: int, side: int, preset: int) -> bytes:
         payload=bytes([preset & 0xFF, 0x00]),
     )
 
-
-# --- response parsing -------------------------------------------------------
 
 @dataclass
 class McrResponse:

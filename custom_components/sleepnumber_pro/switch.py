@@ -5,8 +5,8 @@ from __future__ import annotations
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
-from ._compat import AddConfigEntryEntitiesCallback
 
+from ._compat import AddConfigEntryEntitiesCallback
 from .const import PRIVACY, RESPONSIVE_AIR
 from .coordinator import SleepNumberConfigEntry
 from .entity import SleepNumberBedEntity, SleepNumberSleeperEntity

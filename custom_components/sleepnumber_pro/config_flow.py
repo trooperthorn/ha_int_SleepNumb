@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import logging
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .sleepiq_local import AsyncSleepIQ, SleepIQLoginException, SleepIQTimeoutException
 from .const import CONF_BLE_ADDRESS, CONF_LOCAL_HOST, CONF_LOCAL_TOKEN, DOMAIN
+from .sleepiq_local import AsyncSleepIQ, SleepIQLoginException, SleepIQTimeoutException
 
 if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak

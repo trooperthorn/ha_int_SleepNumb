@@ -14,11 +14,12 @@ foundation presets.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 
+from . import mcr
 from .const import SOURCE_BLE
 from .local import LocalStatus
-from . import mcr
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,8 +41,6 @@ class BleBridgeClient:
         self.bed_addr = mcr.bed_addr_from_mac(address)
         self._lock = asyncio.Lock()
 
-    # -- discovery -----------------------------------------------------------
-
     def _ble_device(self):
         """Resolve a connectable BLEDevice via HA's Bluetooth stack, or None."""
         from homeassistant.components import bluetooth
@@ -52,8 +51,6 @@ class BleBridgeClient:
 
     async def available(self) -> bool:
         return self._ble_device() is not None
-
-    # -- transaction ---------------------------------------------------------
 
     async def _run(self, queries: list[tuple[bytes, int]]) -> dict[int, bytes]:
         """Connect, handshake, send each (frame, expected_func) query, and return
@@ -106,13 +103,9 @@ class BleBridgeClient:
                         _LOGGER.debug("No BLE response for func %s", expect_func)
                 return responses
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     await client.stop_notify(TX_UUID)
-                except Exception:  # noqa: BLE001
-                    pass
                 await client.disconnect()
-
-    # -- reads ---------------------------------------------------------------
 
     async def status(self) -> LocalStatus:
         """Read sleep numbers over BLE. (Presence is broken in MCR firmware, so it
@@ -133,8 +126,6 @@ class BleBridgeClient:
             [(mcr.build_foundation_status(self.bed_addr), mcr.FUNC_READ)]
         )
         return mcr.parse_foundation_status(responses.get(mcr.FUNC_READ, b""))
-
-    # -- writes --------------------------------------------------------------
 
     async def set_sleep_number(self, side: int, value: int) -> None:
         await self._run([(mcr.build_set_sleep_number(self.bed_addr, side, value), mcr.FUNC_SET)])

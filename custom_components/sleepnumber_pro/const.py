@@ -14,10 +14,7 @@ CONF_LOCAL_PORT = "local_port"    # bridge port (default 8765)
 CONF_LOCAL_TOKEN = "local_token"  # optional bridge shared secret
 CONF_BLE_ADDRESS = "ble_address"  # optional BLE address of the bed hub (Phase 2b)
 
-# BLE identifiers for Sleep Number smart hubs (see docs/BLUETOOTH.md).
-# Confirmed on a 360-generation hub (MAC 64:DB:A0:...): the hub advertises this
-# service UUID and manufacturer id 20051 (0x4E53, "SN") with a small state
-# payload. The Climate 360 uses a different service UUID; both are matched.
+# BLE identifiers for Sleep Number smart hubs; see docs/BLUETOOTH.md.
 BLE_SERVICE_UUID = "ffffd1fd-388d-938b-344a-939d1f6efee0"
 BLE_SERVICE_UUID_C360 = "09d23fae-90e6-44c2-95b6-0b3d0f1abf25"
 BLE_SERVICE_UUIDS = (BLE_SERVICE_UUID, BLE_SERVICE_UUID_C360)

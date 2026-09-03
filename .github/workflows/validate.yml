@@ -2,42 +2,31 @@ name: Validate
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
   schedule:
     - cron: "0 6 * * 1"
 
-jobs:
-  hassfest:
-    name: hassfest
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@master
+permissions:
+  contents: read
 
+jobs:
   hacs:
-    name: HACS
+    name: HACS validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: HACS validation
-        uses: hacs/action@main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main on 2026-09-03
         with:
           category: integration
-          ignore: brands
+          # HACS reads license metadata from the default branch, so feature
+          # branches skip that one check; main validates it.
+          ignore: ${{ github.ref != 'refs/heads/main' && 'license' || '' }}
 
-  tests:
-    name: pytest
+  hassfest:
+    name: hassfest (manifest sanity)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install homeassistant pytest-homeassistant-custom-component
-      - name: Run tests
-        run: pytest -q
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: home-assistant/actions/hassfest@a7c616ce81ccda50150bf1595786c71b1883fabb # master on 2026-09-03

@@ -5,9 +5,9 @@ from __future__ import annotations
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from ._compat import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from ._compat import AddConfigEntryEntitiesCallback
 from .coordinator import SleepNumberConfigEntry
 from .entity import bed_device_info
 
