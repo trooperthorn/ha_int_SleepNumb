@@ -1,1 +1,3 @@
 pytest-homeassistant-custom-component==0.13.362
+ruff==0.12.11
+mypy==2.3.1
