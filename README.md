@@ -1,4 +1,4 @@
-# Sleep Number (SleepIQ) — Local-First for Home Assistant
+# Sleep Number (SleepIQ): Local-First for Home Assistant
 
 ## SEE TOOLS ON HOW TO OBTAIN DATA, and How SleepNumber is able to determine the number of times you have Bedroom Activies.
 
@@ -10,7 +10,7 @@ A rework of the Home Assistant Sleep Number / SleepIQ integration, engineered to
 > stock integration). This project treats the cloud as a *fallback*, and the hub
 > on your own LAN as the *preferred* source of truth.
 
-📋 **[Audit, protocol map & architecture](https://claude.ai/code/artifact/e9014191-8db3-4c27-80c8-13bbae897622)** — the full write-up this repo implements.
+📋 **[Audit, protocol map & architecture](https://claude.ai/code/artifact/e9014191-8db3-4c27-80c8-13bbae897622)**, the full write-up this repo implements.
 
 See [`docs/README.md`](docs/README.md) for the full documentation index.
 
@@ -23,44 +23,44 @@ currently answering, and falls back automatically:
 
 | Priority | Transport | Status |
 |----------|-----------|--------|
-| 1 | **Bluetooth LE (MCR)** — the hub's own BLE radio; local, **no hardware modification**, in-range only | shipped: reads/sets sleep number and drives base presets — **recovers base control the cloud severed** ([`docs/BLUETOOTH.md`](docs/BLUETOOTH.md)) |
-| 2 | **On-hub bridge** — a LAN daemon over the pump protocol; local, whole-home | shipped; needs a one-time UART root ([`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)) |
-| 3 | **Cloud (Cognito)** — hardened REST, JWT auth, full sleep-health archive | live now; automatic fallback |
+| 1 | **Bluetooth LE (MCR)**, the hub's own BLE radio; local, **no hardware modification**, in-range only | shipped: reads/sets sleep number and drives base presets, **recovers base control the cloud severed** ([`docs/BLUETOOTH.md`](docs/BLUETOOTH.md)) |
+| 2 | **On-hub bridge**, a LAN daemon over the pump protocol; local, whole-home | shipped; needs a one-time UART root ([`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)) |
+| 3 | **Cloud (Cognito)**, hardened REST, JWT auth, full sleep-health archive | live now; automatic fallback |
 
 The status coordinator tries the local bridge first and falls back to the cloud
 each cycle, exposing which path is active as a **Connection** sensor. The same
 intent (`set_sleep_number`, `read presence`, …) maps to a local command when a
-local transport answers and a cloud call when it doesn't — degrading feature by
+local transport answers and a cloud call when it doesn't, degrading feature by
 feature, never all-or-nothing.
 
 ## Status
 
 | Phase | State |
 |-------|-------|
-| 0 · Recon + audit | ✅ complete — see the audit artifact above |
-| 1 · Hardened cloud path | ✅ shipped — full component, 10 passing tests |
+| 0 · Recon + audit | ✅ complete, see the audit artifact above |
+| 1 · Hardened cloud path | ✅ shipped, full component, 10 passing tests |
 | 2 · Local UART transport | ✅ bridge + root guide shipped; activates after you root the hub |
 | 3 · Exceed Platinum | ✅ blueprints, CI, diagnostics, quality-scale tracking |
 
 ### What's in the box
 
-- **`custom_components/sleepnumber_pro/`** — the integration: Cognito config flow
+- **`custom_components/sleepnumber_pro/`**: the integration: Cognito config flow
   with reauth, **reconfigure**, DHCP + **Bluetooth LE discovery**, three
   coordinators with **local-first / cloud-fallback**, a hub device and per-sleeper
   devices, diagnostics, and entities for presence, sleep number, pressure, sleep
   score, heart rate, respiration, HRV, restful/restless durations, Responsive Air,
   privacy pause, calibrate, stop-pump, and a **Connection** sensor (local vs cloud).
-- **`custom_components/sleepnumber_pro/sleepiq_local/`** — the forked library
+- **`custom_components/sleepnumber_pro/sleepiq_local/`**: the forked library
   (Cognito default, graceful 404, Responsive Air), verified live end-to-end.
-- **`bridge/`** + **[`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)** — the on-hub bridge
+- **`bridge/`** + **[`docs/LOCAL_ROOT.md`](docs/LOCAL_ROOT.md)**, the on-hub bridge
   daemon and the UART root procedure (whole-home local path).
-- **Bluetooth (MCR)** — [`docs/BLUETOOTH.md`](docs/BLUETOOTH.md), `mcr.py`,
+- **Bluetooth (MCR)**: [`docs/BLUETOOTH.md`](docs/BLUETOOTH.md), `mcr.py`,
   `bluetooth.py`, `tools/ble_scan.py`: the no-root local path over the hub's own
-  BLE radio — reads/sets sleep number and drives base presets, recovering base
+  BLE radio, reads/sets sleep number and drives base presets, recovering base
   control the cloud gave up.
-- **`blueprints/`** — five cross-integration automations (weather, solar, severe
+- **`blueprints/`**: five cross-integration automations (weather, solar, severe
   weather, climate, goodnight). See [`docs/AUTOMATIONS.md`](docs/AUTOMATIONS.md).
-- **`tools/`** — `inspect_bed.py` (see your live bed) and `archive_history.py` with
+- **`tools/`**: `inspect_bed.py` (see your live bed) and `archive_history.py` with
   a nightly scheduler to preserve your sleep history before the cloud drops it.
 
 ### Entities (per sleeper unless noted)
@@ -70,7 +70,7 @@ feature, never all-or-nothing.
 | `binary_sensor` | In bed (occupancy) |
 | `sensor` | Sleep number, pressure*, sleep score, heart rate, respiratory rate, HRV, sleep duration, restful*, restless*, Connection (local/cloud, bed)* |
 | `number` | Sleep number (firmness) |
-| `select` | Base preset — Flat / Zero G / Read / Watch TV / Snore / Favorite (BLE; recovers severed base control) |
+| `select` | Base preset, Flat / Zero G / Read / Watch TV / Snore / Favorite (BLE; recovers severed base control) |
 | `switch` | Responsive Air; privacy pause (bed) |
 | `button` | Calibrate (bed); stop pump (bed) |
 

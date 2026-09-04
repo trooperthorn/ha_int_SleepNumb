@@ -21,7 +21,7 @@ scale does not itself require but which is the whole point here.
 | Devices + areas modelled | Gold | ✅ (hub device + per-sleeper devices) |
 | Entity categories (config/diagnostic) | Gold | ✅ |
 | Icon translations / translations | Gold | ✅ (`translations/en.json`) |
-| Strict typing | Platinum | 🔶 partial — component typed; vendored lib not yet |
+| Strict typing | Platinum | 🔶 partial, component typed; vendored lib not yet |
 | Async dependency, no blocking I/O | Platinum | ✅ |
 | Websocket/push or efficient polling | Platinum | 🔶 cloud polls; local push planned |
 | **Local polling / no cloud reliance** | *beyond* | 🔶 architecture + bridge shipped; activates after hub root |

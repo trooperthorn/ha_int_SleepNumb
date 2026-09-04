@@ -1,6 +1,6 @@
 # Going local: rooting the hub and installing the bridge
 
-This is the Phase 2 hardware path. It is **optional** — the integration works
+This is the Phase 2 hardware path. It is **optional**, the integration works
 today over the cloud with no hardware changes. Do this when you want the bed to
 keep working after the SleepIQ cloud is gone, and to recover the base/foundation
 control that Sleep Number has already cut server-side.
@@ -11,7 +11,7 @@ control that Sleep Number has already cut server-side.
 
 ## Why this is necessary
 
-A stock SleepIQ hub (model **360SIQ01D**) exposes **no** local network service —
+A stock SleepIQ hub (model **360SIQ01D**) exposes **no** local network service -
 verified on this bed: zero open TCP ports, no UPnP, no mDNS. It only talks
 outbound to the cloud. To get a local data path you install a small bridge
 daemon on the hub, and to install anything you first need a root shell, which
@@ -27,7 +27,7 @@ Credit: the root method below is based on the excellent write-up by
   - **Pin 1** – TX (into hub)
   - **Pin 2** – RX (out of hub)
   - **Pin 3** – GND
-- Console settings: **115200 baud, 8N1** — this is the "negotiate baud / serial
+- Console settings: **115200 baud, 8N1**, this is the "negotiate baud / serial
   connection" work at the center of the project; for SleepIQ the serial line is
   the hub's own console and the baud is fixed by U-Boot.
 
@@ -54,7 +54,7 @@ editing the on-disk `/real.root` outside the chroot.
 
 Copy `bridge/sleepnumber_bridge.py` to the hub (e.g. `/bam/sleepnumber_bridge.py`)
 via your serial session or, once networking is up, `scp`. Then confirm the hub's
-local command tool path — the vendor script that speaks to the pump (Dillan's is
+local command tool path, the vendor script that speaks to the pump (Dillan's is
 at `/bam/scripts/bio`). Point the bridge at it and start it:
 
 ```sh

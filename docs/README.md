@@ -8,3 +8,4 @@
 | [AUTOMATIONS.md](AUTOMATIONS.md) | The ready-to-import blueprints shipped with this integration. |
 | [QUALITY_SCALE.md](QUALITY_SCALE.md) | Home Assistant quality scale rule status for this integration. |
 | [operations.md](operations.md) | Standalone `tools/` scripts (the nightly SleepIQ history archive) and the credentials they read. |
+- [decisions.md](decisions.md): dated decisions with the alternative rejected and why, including scanner findings judged not applicable.

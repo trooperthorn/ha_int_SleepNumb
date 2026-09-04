@@ -29,7 +29,7 @@ score) live. The legacy key path remains available via `login_method=LOGIN_KEY`.
 ## 2. `404` is not an auth failure (`api.py`, `__make_request`)
 
 **Problem.** The request layer retried login on both `401` **and** `404`, then
-raised `SleepIQAPIException`. A `404` is not a session problem — it is a real
+raised `SleepIQAPIException`. A `404` is not a session problem, it is a real
 "not found," e.g. `/foundation/status → 404 "No Foundation Device"` when a base is
 disconnected (the current state of the test bed). The retry-then-raise turned a
 single missing subsystem into a whole-coordinator `UpdateFailed`, taking every
