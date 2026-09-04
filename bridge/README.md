@@ -27,6 +27,12 @@ procedure.
 | `GET /status` | merged snapshot: sleep number + presence per side |
 | `GET /raw?key=PSNL&arg=` | raw stdout of one command, for calibration |
 
+`key` must be exactly four upper-case letters and `arg` at most 32 characters
+from `A-Z`, `a-z`, `0-9`, `_`, `.`, `:`, `-`; anything else returns 400 before
+a process starts. The command template is split into an argv list and run
+without a shell, so request values can never be interpreted as shell syntax.
+Set `SNB_TOKEN`; without it any device on the LAN can drive the pump.
+
 ## Quick test
 
 ```sh

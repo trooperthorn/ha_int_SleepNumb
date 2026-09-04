@@ -6,12 +6,14 @@ Reads credentials from the environment so nothing is written to disk:
 
     SIQ_EMAIL=you@example.com SIQ_PASS='...' python tools/inspect_bed.py
 
-Prints the live picture (presence, sleep number, pressure) and the latest
-sleep-health record (heart rate, respiration, HRV, SleepIQ score) for every
-sleeper. This is the same code path the integration's cloud transport uses.
+Prints the live picture (presence, sleep number, pressure) for every sleeper.
+The latest sleep-health record (heart rate, respiration, HRV, SleepIQ score)
+is biometric data and is fetched and printed only with --biometrics. This is
+the same code path the integration's cloud transport uses.
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 import sys
@@ -35,7 +37,14 @@ def _session() -> aiohttp.ClientSession:
     return aiohttp.ClientSession(connector=aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver()))
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--biometrics", action="store_true", help="also fetch and print last night's heart rate, respiration, HRV, and score")
+    return parser.parse_args()
+
+
 async def main() -> int:
+    args = _parse_args()
     try:
         email = os.environ["SIQ_EMAIL"]
         password = os.environ["SIQ_PASS"]
@@ -60,6 +69,9 @@ async def main() -> int:
                 print(f"       in bed:       {sleeper.in_bed}")
                 print(f"       sleep number: {sleeper.sleep_number}")
                 print(f"       pressure:     {sleeper.pressure}")
+                if not args.biometrics:
+                    print("       last night:   not fetched (pass --biometrics to show)")
+                    continue
                 try:
                     await sleeper.fetch_sleep_data()
                     sd = getattr(sleeper, "sleep_data", None)

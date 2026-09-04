@@ -30,6 +30,8 @@ Endpoints (all GET):
 
 import json
 import os
+import re
+import shlex
 import subprocess
 import time
 
@@ -55,11 +57,27 @@ STATUS_KEYS = {
 }
 
 
+# The pump protocol keys are exactly four upper-case letters; arguments are
+# short and alphanumeric. Anything else is rejected before a process starts.
+KEY_RE = re.compile(r"^[A-Z]{4}$")
+ARG_RE = re.compile(r"^[A-Za-z0-9_.:-]{0,32}$")
+
+
+def build_argv(key, arg=""):
+    """Return the argv list for one key; raise ValueError on bad input."""
+    if not KEY_RE.match(key or ""):
+        raise ValueError("key must be four upper-case letters")
+    if not ARG_RE.match(arg or ""):
+        raise ValueError("arg must be at most 32 characters from [A-Za-z0-9_.:-]")
+    argv = [tok.format(key=key, arg=arg) for tok in shlex.split(CMD_TEMPLATE)]
+    return [tok for tok in argv if tok]
+
+
 def run_key(key, arg=""):
     """Invoke the hub's command tool for one 4-letter key; return stdout text."""
-    cmd = CMD_TEMPLATE.format(key=key, arg=arg).strip()
+    argv = build_argv(key, arg)
     proc = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        argv, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     out, _ = proc.communicate()
     if isinstance(out, bytes):
@@ -101,7 +119,10 @@ class Handler(BaseHTTPRequestHandler):
             arg = (query.get("arg") or [""])[0]
             if not key:
                 return self._send(400, {"error": "missing key"})
-            raw, rc = run_key(key, arg)
+            try:
+                raw, rc = run_key(key, arg)
+            except ValueError as err:
+                return self._send(400, {"error": str(err)})
             return self._send(200, {"key": key, "arg": arg, "raw": raw, "rc": rc})
 
         if route == "/status":
