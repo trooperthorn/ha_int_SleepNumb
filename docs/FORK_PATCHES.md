@@ -6,6 +6,8 @@
 ahead of upstream, and so the exact code is auditable in-tree.
 
 Changes so far are minimal and surgical; everything else is upstream.
+`asyncsleepiq` is distributed under the MIT License; this repository's own
+[`LICENSE`](../LICENSE) covers the project as a whole.
 
 ## 1. Default to Cognito cookie auth (`api.py`, `asyncsleepiq.py`)
 
