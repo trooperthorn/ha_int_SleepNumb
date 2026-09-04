@@ -36,9 +36,12 @@ the 2026.7.0 floor, which no test exercised.
 
 CodeQL flagged `bridge/sleepnumber_bridge.py` for building a shell command
 from request parameters (`py/command-line-injection`, critical). The bridge
-now rejects any `key` that is not four upper-case letters and any `arg`
-outside `[A-Za-z0-9_.:-]{0,32}`, splits the command template into an argv
-list, and runs it with `shell=False`. The pump protocol only ever needs
+now accepts only the documented pump keys (`KNOWN_KEYS`) and an `arg` of at
+most 32 characters from `[A-Za-z0-9_.:-]`, rebuilds both from those
+allow-lists so no request text reaches the process, splits the command
+template into an argv list, and runs it with `shell=False`. A regex check
+alone left CodeQL's taint analysis unsatisfied, and the allow-list is the
+honest statement of what the bridge supports. The pump protocol only ever needs
 four-letter keys and short alphanumeric arguments (`docs/LOCAL_ROOT.md`), so
 the allow-list costs nothing. Rejected: keeping `shell=True` and quoting the
 values, because quoting is the mechanism that has failed historically and the

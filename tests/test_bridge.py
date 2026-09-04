@@ -30,7 +30,12 @@ def bridge():
 
 def test_build_argv_uses_a_list_without_a_shell(bridge) -> None:
     assert bridge.build_argv("PSNL", "") == ["/bam/scripts/bio", "PSNL"]
-    assert bridge.build_argv("PSNS", "45") == ["/bam/scripts/bio", "PSNS", "45"]
+    assert bridge.build_argv("PSNS", "L100") == ["/bam/scripts/bio", "PSNS", "L100"]
+
+
+def test_every_documented_key_is_accepted(bridge) -> None:
+    for key in ("PSNL", "PSNR", "PSNS", "LBPL", "LBPR", "MFUL", "MFFL", "FWSL", "SBAS"):
+        assert bridge.build_argv(key)[-1] == key
 
 
 @pytest.mark.parametrize(
@@ -40,13 +45,14 @@ def test_build_argv_uses_a_list_without_a_shell(bridge) -> None:
         ("psnl", ""),
         ("PSN", ""),
         ("PSNLX", ""),
+        ("PSNX", ""),
         ("PSNL", "45; reboot"),
         ("PSNL", "$(id)"),
         ("PSNL", "a" * 33),
         ("", ""),
     ],
 )
-def test_build_argv_rejects_shell_metacharacters_and_bad_keys(bridge, key: str, arg: str) -> None:
+def test_build_argv_rejects_shell_metacharacters_and_unknown_keys(bridge, key: str, arg: str) -> None:
     with pytest.raises(ValueError):
         bridge.build_argv(key, arg)
 

@@ -27,10 +27,13 @@ procedure.
 | `GET /status` | merged snapshot: sleep number + presence per side |
 | `GET /raw?key=PSNL&arg=` | raw stdout of one command, for calibration |
 
-`key` must be exactly four upper-case letters and `arg` at most 32 characters
-from `A-Z`, `a-z`, `0-9`, `_`, `.`, `:`, `-`; anything else returns 400 before
-a process starts. The command template is split into an argv list and run
-without a shell, so request values can never be interpreted as shell syntax.
+`key` must be one of the documented pump keys (`PSNL`, `PSNR`, `PSNS`, `LBPL`,
+`LBPR`, `MFUL`, `MFFL`, `FWSL`, `SBAS`; extend `KNOWN_KEYS` in the script if your
+hub has more) and `arg` at most 32 characters from `A-Z`, `a-z`, `0-9`, `_`,
+`.`, `:`, `-`; anything else returns 400 before a process starts. The values
+passed to the tool are rebuilt from those allow-lists, the command template is
+split into an argv list, and it runs without a shell, so request text is never
+interpreted as shell syntax.
 Set `SNB_TOKEN`; without it any device on the LAN can drive the pump.
 
 ## Quick test
