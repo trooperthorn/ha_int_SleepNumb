@@ -55,6 +55,8 @@ high). Heart rate, respiration, and HRV are the user's own data, printed to
 their own console, but the tool is also run to capture logs for bug reports
 and those logs travel. The tool now fetches and prints that record only with
 `--biometrics`; the default output keeps presence, sleep number, and
-pressure. Rejected: dismissing the alert, because the log-sharing case is
-real.
+pressure. CodeQL still flags the opt-in print itself, so that alert is
+dismissed as "won't fix" with this entry as the reason: with the flag the
+user is asking to see their own data. Rejected: dismissing without the
+opt-in change, because the log-sharing case is real.
 
