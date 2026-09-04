@@ -2,7 +2,7 @@
 
 ## These scripts pull all data from SleepNumber Cloud site. This is enough information to know about you sexual activity
 
-Standalone utilities that use the vendored `sleepiq_local` library directly — no
+Standalone utilities that use the vendored `sleepiq_local` library directly, no
 Home Assistant required. Credentials come from the environment; nothing is written
 to disk.
 
@@ -62,7 +62,7 @@ There is no single federal data privacy law in the United States, but many state
 If a company retains sensitive data without your consent, fails to honor a deletion request, or exposes your data in a security breach, the enforcement authority depends on your state of residence:
 
 * **State Attorneys General:** In almost every state with a privacy law, the State Attorney General is the primary regulatory enforcer. In Texas, for example, citizens can file privacy complaints directly through the Texas Attorney General's Consumer Complaint Portal.
-* **Dedicated Privacy Agencies:** California is unique in that it established a dedicated agency—the California Privacy Protection Agency (CPPA)—to enforce the state's privacy act alongside the Attorney General.
+* **Dedicated Privacy Agencies:** California is unique in that it established a dedicated agency-the California Privacy Protection Agency (CPPA)-to enforce the state's privacy act alongside the Attorney General.
 * **Private Right of Action (Direct Lawsuits):** In most states, only the government can penalize a company for privacy violations. However, Washington's MHMDA allows consumers to sue companies directly for health data violations. California also allows individuals to file private lawsuits, but specifically in the event of a data breach.
 
 > **Immediate Action for Sleep Number Owners:** You can stop the transmission of new sleep metrics to their cloud by enabling "Privacy Mode" in the Sleep Number app. To delete the historical data they already have, you must submit a verifiable deletion request or contact their customer service at 1-800-554-0184.

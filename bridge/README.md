@@ -4,7 +4,7 @@
 local HTTP/JSON API so Home Assistant can read the bed without the cloud.
 
 - Stdlib only, compatible with the hub's **Python 2.7.18**.
-- Does not reimplement the pump wire protocol — it invokes the hub's existing
+- Does not reimplement the pump wire protocol, it invokes the hub's existing
   vendor command tool (the 4-letter `PSNL`/`PSNS`/`LBPL` interface) and returns
   the result as JSON.
 

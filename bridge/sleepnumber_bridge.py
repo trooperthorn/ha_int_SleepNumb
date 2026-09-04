@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """SleepNumber local bridge -- runs ON the rooted SleepIQ hub.
 
 The stock SleepIQ hub (model 360SIQ01D) is outbound-only: it talks to Sleep
@@ -36,10 +35,10 @@ import time
 
 try:                       # Python 2
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-    from urlparse import urlparse, parse_qs
+    from urlparse import parse_qs, urlparse
 except ImportError:        # Python 3 (for local testing on a workstation)
     from http.server import BaseHTTPRequestHandler, HTTPServer
-    from urllib.parse import urlparse, parse_qs
+    from urllib.parse import parse_qs, urlparse
 
 
 CMD_TEMPLATE = os.environ.get("SNB_CMD", "/bam/scripts/bio {key} {arg}")
