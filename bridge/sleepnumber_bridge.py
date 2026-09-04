@@ -30,6 +30,7 @@ Endpoints (all GET):
 
 import json
 import os
+import shlex
 import subprocess
 import time
 
@@ -55,11 +56,38 @@ STATUS_KEYS = {
 }
 
 
+# Only the documented pump keys (docs/LOCAL_ROOT.md) reach the command tool,
+# and the argument is rebuilt character by character from an allowed set, so
+# the values handed to the process are module constants, never request text.
+KNOWN_KEYS = {
+    "PSNL": "PSNL", "PSNR": "PSNR", "PSNS": "PSNS",
+    "LBPL": "LBPL", "LBPR": "LBPR",
+    "MFUL": "MFUL", "MFFL": "MFFL",
+    "FWSL": "FWSL", "SBAS": "SBAS",
+}
+ARG_CHARS = dict((c, c) for c in
+                 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.:-")
+ARG_MAX_LEN = 32
+
+
+def build_argv(key, arg=""):
+    """Return the argv list for one key; raise ValueError on bad input."""
+    if key not in KNOWN_KEYS:
+        raise ValueError("key must be one of %s" % ", ".join(sorted(KNOWN_KEYS)))
+    arg = arg or ""
+    if len(arg) > ARG_MAX_LEN or any(c not in ARG_CHARS for c in arg):
+        raise ValueError("arg must be at most %d characters from [A-Za-z0-9_.:-]" % ARG_MAX_LEN)
+    safe_key = KNOWN_KEYS[key]
+    safe_arg = "".join(ARG_CHARS[c] for c in arg)
+    argv = [tok.format(key=safe_key, arg=safe_arg) for tok in shlex.split(CMD_TEMPLATE)]
+    return [tok for tok in argv if tok]
+
+
 def run_key(key, arg=""):
     """Invoke the hub's command tool for one 4-letter key; return stdout text."""
-    cmd = CMD_TEMPLATE.format(key=key, arg=arg).strip()
+    argv = build_argv(key, arg)
     proc = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        argv, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     out, _ = proc.communicate()
     if isinstance(out, bytes):
@@ -101,7 +129,10 @@ class Handler(BaseHTTPRequestHandler):
             arg = (query.get("arg") or [""])[0]
             if not key:
                 return self._send(400, {"error": "missing key"})
-            raw, rc = run_key(key, arg)
+            try:
+                raw, rc = run_key(key, arg)
+            except ValueError as err:
+                return self._send(400, {"error": str(err)})
             return self._send(200, {"key": key, "arg": arg, "raw": raw, "rc": rc})
 
         if route == "/status":

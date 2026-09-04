@@ -15,7 +15,8 @@ SIQ_EMAIL='you@example.com' SIQ_PASS='your-password' python tools/inspect_bed.py
 Logs in via Cognito and prints, for every sleeper:
 
 - live presence, sleep number, and raw pressure
-- last night's SleepIQ score, average heart rate, respiration, HRV, and duration
+- with `--biometrics`, last night's SleepIQ score, average heart rate, respiration,
+  HRV, and duration (biometric data is not fetched or printed unless asked for)
 
 Useful for confirming the cloud path works for your account, and for capturing a
 baseline of what data is still flowing before the cloud degrades further.
