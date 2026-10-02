@@ -62,3 +62,26 @@ async def test_responsive_air_capability(hass: HomeAssistant, patched_client, co
     ra = hass.states.get("switch.the_cama_joanie_responsive_air")
     assert ra is not None
     assert ra.state == "on"  # leftSideEnabled True for Joanie
+
+
+async def test_foundation_timeout_keeps_presence_available(
+    hass: HomeAssistant, patched_client, config_entry
+) -> None:
+    """A foundation/outlet timeout must not fail the status update (issue 15)."""
+    from unittest.mock import AsyncMock
+
+    from custom_components.sleepnumber_pro.sleepiq_local import SleepIQTimeoutException
+
+    bed = next(iter(patched_client.beds.values()))
+    bed.foundation.type = "splitKing"
+    bed.foundation.update_foundation_status = AsyncMock(
+        side_effect=SleepIQTimeoutException("API call timed out")
+    )
+    await _setup(hass, config_entry)
+
+    coordinator = config_entry.runtime_data.status
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert coordinator.last_update_success
+    assert hass.states.get("binary_sensor.the_cama_sean_in_bed").state == "on"
