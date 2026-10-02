@@ -12,7 +12,9 @@
       "manufacturer_id": 20051
     }
   ],
-  "codeowners": ["@trooperthorn"],
+  "codeowners": [
+    "@trooperthorn"
+  ],
   "config_flow": true,
   "dependencies": [],
   "dhcp": [
@@ -24,7 +26,9 @@
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/trooperthorn/ha_int_SleepNumb/issues",
-  "loggers": ["sleepiq_local"],
+  "loggers": [
+    "sleepiq_local"
+  ],
   "requirements": [],
-  "version": "2026.09.03.1"
+  "version": "2026.10.02.1"
 }
