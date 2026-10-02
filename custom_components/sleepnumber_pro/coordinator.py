@@ -134,7 +134,7 @@ class SleepNumberStatusCoordinator(_BaseCoordinator):
                 continue
             try:
                 await bed.foundation.update_foundation_status()
-            except SleepIQAPIException as err:
+            except (SleepIQAPIException, SleepIQTimeoutException) as err:
                 _LOGGER.debug("Foundation status unavailable for %s: %s", bed.name, err)
 
     def _apply_local(self, snap: LocalStatus) -> None:
