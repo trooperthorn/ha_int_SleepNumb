@@ -26,6 +26,16 @@ Listing the brand upstream would let the ignore be removed. The license check
 is skipped on feature branches only, because HACS reads license metadata from
 the default branch.
 
+## 2026-10-08: Minimum Home Assistant is 2026.10.0, schemas use probatio
+
+Core 2026.10 types `async_show_form(data_schema=...)` as a probatio schema, so
+the voluptuous schemas failed mypy (developer blog 2026-09-30, "Probatio is our
+validation engine"). The config flow now imports `probatio` directly, as core
+does. The suite moved to `pytest-homeassistant-custom-component` 0.13.371,
+which pins core 2026.10.0, so the floor follows it under the rule below.
+Rejected: aliasing `probatio as vol`, which core's lint config bans, and
+keeping voluptuous with type ignores, which hides real schema errors.
+
 ## 2026-09-04: Minimum Home Assistant is 2026.9.0
 
 The suite runs on `pytest-homeassistant-custom-component` 0.13.363, which pins

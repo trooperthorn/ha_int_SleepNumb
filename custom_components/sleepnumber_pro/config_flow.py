@@ -6,7 +6,7 @@ import logging
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-import voluptuous as vol
+import probatio
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
@@ -22,18 +22,18 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def _user_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
+def _user_schema(defaults: dict[str, Any] | None = None) -> probatio.Schema:
     """Credential form, with an optional local hub bridge address."""
     defaults = defaults or {}
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Required(CONF_USERNAME, default=defaults.get(CONF_USERNAME)): str,
-            vol.Required(CONF_PASSWORD): str,
-            vol.Optional(
+            probatio.Required(CONF_USERNAME, default=defaults.get(CONF_USERNAME)): str,
+            probatio.Required(CONF_PASSWORD): str,
+            probatio.Optional(
                 CONF_LOCAL_HOST,
                 description={"suggested_value": defaults.get(CONF_LOCAL_HOST)},
             ): str,
-            vol.Optional(
+            probatio.Optional(
                 CONF_LOCAL_TOKEN,
                 description={"suggested_value": defaults.get(CONF_LOCAL_TOKEN)},
             ): str,
@@ -167,7 +167,7 @@ class SleepNumberConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=probatio.Schema({probatio.Required(CONF_PASSWORD): str}),
             errors=errors,
             description_placeholders={CONF_USERNAME: reauth_entry.data[CONF_USERNAME]},
         )
