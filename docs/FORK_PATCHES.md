@@ -43,6 +43,31 @@ probes with `check()` (a boolean `GET`), so an absent foundation now degrades to
 **Verified.** `init_beds()` against the test bed reports foundation type `(none)`
 and continues; bed status and sleep data still load.
 
+## 3. Transport failures are not login failures (`api.py`, `exceptions.py`)
+
+**Problem.** `login()` wrapped every non-timeout exception as
+`SleepIQLoginException("Connection failure: ...")`. A DNS or socket failure during
+the token call therefore looked like rejected credentials. The integration mapped
+that to `ConfigEntryAuthFailed`, and Home Assistant opened a reauth flow against a
+working account (seen live on 2026-10-09 during a DNS outage: `Cannot connect to
+host ecim.sleepnumber.com:443 ... Timeout while contacting DNS servers`). The same
+wrapping also re-labelled a genuine `SleepIQLoginException` raised inside
+`login_key` / `login_cookie` as a "Connection failure".
+
+**Change.** New `SleepIQConnectionException`. In `login()`, `aiohttp.ClientConnectionError`
+and `OSError` (which cover `ClientConnectorError`, `ClientConnectorDNSError`,
+`ClientOSError`, and `ServerDisconnectedError`) raise it; `SleepIQLoginException`
+and `SleepIQTimeoutException` pass through unchanged; only the remaining
+unexpected errors (for example a login payload without the expected key) stay a
+login failure. `__make_request` raises the same exception for transport errors on
+data calls, so the coordinators see one type instead of a raw aiohttp error.
+
+**Integration side.** `coordinator._reraise` maps it to `UpdateFailed`, setup maps
+it to `ConfigEntryNotReady`, and the config flow reports `cannot_connect`. The
+settings coordinator also treats a timeout or transport error on the pause-mode
+and Responsive Air calls as `UpdateFailed` instead of letting it escape as an
+"Unexpected error". Covered by `tests/test_connection_errors.py`.
+
 ## Planned fork work (Phase 2)
 
 - Transport interface: a `Transport` protocol with `CloudTransport` (this REST code)

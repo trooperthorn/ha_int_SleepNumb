@@ -29,6 +29,7 @@ from .local import DEFAULT_PORT, LocalBridgeClient
 from .sleepiq_local import (
     AsyncSleepIQ,
     SleepIQAPIException,
+    SleepIQConnectionException,
     SleepIQLoginException,
     SleepIQTimeoutException,
 )
@@ -56,11 +57,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SleepNumberConfigEntry) 
         raise ConfigEntryAuthFailed(str(err)) from err
     except SleepIQTimeoutException as err:
         raise ConfigEntryNotReady(str(err) or "Timed out during authentication") from err
+    except SleepIQConnectionException as err:
+        raise ConfigEntryNotReady(str(err) or "Cannot reach SleepIQ") from err
 
     try:
         await client.init_beds()
     except SleepIQTimeoutException as err:
         raise ConfigEntryNotReady(str(err) or "Timed out during initialization") from err
+    except SleepIQConnectionException as err:
+        raise ConfigEntryNotReady(str(err) or "Cannot reach SleepIQ") from err
     except SleepIQAPIException as err:
         raise ConfigEntryNotReady(str(err) or "Error reading from SleepIQ") from err
 

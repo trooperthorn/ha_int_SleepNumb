@@ -13,7 +13,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_BLE_ADDRESS, CONF_LOCAL_HOST, CONF_LOCAL_TOKEN, DOMAIN
-from .sleepiq_local import AsyncSleepIQ, SleepIQLoginException, SleepIQTimeoutException
+from .sleepiq_local import (
+    AsyncSleepIQ,
+    SleepIQConnectionException,
+    SleepIQLoginException,
+    SleepIQTimeoutException,
+)
 
 if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
@@ -53,7 +58,7 @@ async def _validate(hass: HomeAssistant, data: dict[str, Any]) -> str | None:
         await client.login(data[CONF_USERNAME], data[CONF_PASSWORD])
     except SleepIQLoginException:
         return "invalid_auth"
-    except SleepIQTimeoutException:
+    except (SleepIQTimeoutException, SleepIQConnectionException):
         return "cannot_connect"
     return None
 
