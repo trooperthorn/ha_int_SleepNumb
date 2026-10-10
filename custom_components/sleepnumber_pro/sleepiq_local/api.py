@@ -8,11 +8,12 @@ from contextlib import AbstractAsyncContextManager
 import random
 from typing import Any, cast
 
-from aiohttp import ClientResponse, ClientSession, ClientTimeout
+from aiohttp import ClientConnectionError, ClientResponse, ClientSession, ClientTimeout
 
 from .consts import API_URL, BAMKEY, LOGIN_COOKIE, LOGIN_KEY, TIMEOUT
 from .exceptions import (
     SleepIQAPIException,
+    SleepIQConnectionException,
     SleepIQLoginException,
     SleepIQTimeoutException,
 )
@@ -87,9 +88,13 @@ class SleepIQAPI:
         except asyncio.TimeoutError as ex:
             # timed out
             raise SleepIQTimeoutException("API call timed out") from ex
-        except SleepIQTimeoutException as ex:
-            raise ex
+        except (SleepIQLoginException, SleepIQTimeoutException):
+            raise
+        except (ClientConnectionError, OSError) as ex:
+            # DNS, socket, or TLS failure: the server never judged the credentials.
+            raise SleepIQConnectionException(f"Connection failure: {ex}") from ex
         except Exception as ex:
+            # Anything else (malformed login payload, missing key) is a rejected login.
             raise SleepIQLoginException(f"Connection failure: {ex}") from ex
 
         # store in case we need to login again
@@ -217,3 +222,5 @@ class SleepIQAPI:
         except asyncio.TimeoutError as ex:
             # timed out
             raise SleepIQTimeoutException("API call timed out") from ex
+        except (ClientConnectionError, OSError) as ex:
+            raise SleepIQConnectionException(f"Connection failure: {ex}") from ex

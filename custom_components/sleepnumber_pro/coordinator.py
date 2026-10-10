@@ -31,12 +31,17 @@ from .local import LocalBridgeClient, LocalStatus
 from .sleepiq_local import (
     AsyncSleepIQ,
     SleepIQAPIException,
+    SleepIQConnectionException,
     SleepIQLoginException,
     SleepIQTimeoutException,
 )
 from .sleepiq_local.consts import Side
 
 _LOGGER = logging.getLogger(__name__)
+
+# Errors the cloud can raise mid-fetch. Transient ones retry; the rest go through _reraise.
+_TRANSIENT = (SleepIQTimeoutException, SleepIQConnectionException)
+_FETCH_ERRORS = (SleepIQLoginException, SleepIQAPIException, *_TRANSIENT)
 
 type SleepNumberConfigEntry = ConfigEntry[SleepNumberData]
 
@@ -83,6 +88,8 @@ class _BaseCoordinator(DataUpdateCoordinator[None]):
             raise ConfigEntryAuthFailed(str(err)) from err
         if isinstance(err, SleepIQTimeoutException):
             raise UpdateFailed(f"Timed out talking to SleepIQ: {err}") from err
+        if isinstance(err, SleepIQConnectionException):
+            raise UpdateFailed(f"Cannot reach SleepIQ: {err}") from err
         if isinstance(err, SleepIQAPIException):
             if err.code == 401:
                 raise ConfigEntryAuthFailed from err
@@ -125,7 +132,7 @@ class SleepNumberStatusCoordinator(_BaseCoordinator):
         self.source = SOURCE_CLOUD
         try:
             await self.client.fetch_bed_statuses()
-        except (SleepIQLoginException, SleepIQTimeoutException, SleepIQAPIException) as err:
+        except _FETCH_ERRORS as err:
             self._reraise(err)
 
         # Foundation is optional and may be severed at any time — best-effort only.
@@ -134,7 +141,7 @@ class SleepNumberStatusCoordinator(_BaseCoordinator):
                 continue
             try:
                 await bed.foundation.update_foundation_status()
-            except (SleepIQAPIException, SleepIQTimeoutException) as err:
+            except (SleepIQAPIException, *_TRANSIENT) as err:
                 _LOGGER.debug("Foundation status unavailable for %s: %s", bed.name, err)
 
     def _apply_local(self, snap: LocalStatus) -> None:
@@ -167,12 +174,16 @@ class SleepNumberSettingsCoordinator(_BaseCoordinator):
         for bed in self.client.beds.values():
             try:
                 await bed.fetch_pause_mode()
+            except _TRANSIENT as err:
+                self._reraise(err)
             except SleepIQAPIException as err:
                 if err.code == 401:
                     self._reraise(err)
                 _LOGGER.debug("Pause mode unavailable for %s: %s", bed.name, err)
             try:
                 await bed.fetch_responsive_air()
+            except _TRANSIENT as err:
+                self._reraise(err)
             except SleepIQAPIException as err:
                 _LOGGER.debug("Responsive Air unavailable for %s: %s", bed.name, err)
 
@@ -191,5 +202,5 @@ class SleepNumberSleepDataCoordinator(_BaseCoordinator):
         ]
         try:
             await asyncio.gather(*tasks)
-        except (SleepIQLoginException, SleepIQTimeoutException, SleepIQAPIException) as err:
+        except _FETCH_ERRORS as err:
             self._reraise(err)

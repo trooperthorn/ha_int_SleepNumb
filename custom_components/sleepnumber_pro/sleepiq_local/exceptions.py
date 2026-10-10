@@ -9,6 +9,14 @@ class SleepIQTimeoutException(Exception):
     """Timeout in Login process."""
 
 
+class SleepIQConnectionException(Exception):
+    """Transport failure (DNS, socket, TLS) before the API answered.
+
+    Distinct from SleepIQLoginException so a network outage is never reported
+    as bad credentials.
+    """
+
+
 class SleepIQAPIException(Exception):
     """Exception in API call."""
 
